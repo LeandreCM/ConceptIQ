@@ -44,6 +44,11 @@ function pageFromHash(): PageKey {
   return navigation.some((item) => item.key === raw) ? (raw as PageKey) : "home";
 }
 
+function authRedirectUrl() {
+  // Future backend/auth providers can swap this for a configured canonical app URL.
+  return window.location.origin;
+}
+
 export default function App() {
   const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
   const [lastResult, setLastResult] = useState<GameResult | null>(() => loadLastResult());
@@ -258,6 +263,7 @@ export default function App() {
       email,
       password,
       options: {
+        emailRedirectTo: authRedirectUrl(),
         data: {
           username: safeUsername,
           display_name: safeDisplayName,
