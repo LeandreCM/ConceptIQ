@@ -29,6 +29,7 @@ import {
   saveSessionGameCount,
 } from "./utils/storage";
 import { appErrorMessage } from "./utils/errors";
+import { completeEmailConfirmationLogin } from "./utils/authCallback";
 
 const navigation: Array<{ key: PageKey; label: string; icon: ReactNode }> = [
   { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
@@ -76,24 +77,48 @@ export default function App() {
 
     async function loadInitialSession() {
       setAuthLoading(true);
-      const { data, error } = await supabase!.auth.getSession();
 
-      if (!active) {
-        return;
+      try {
+        const confirmedUser = await completeEmailConfirmationLogin(supabase!);
+
+        if (!active) {
+          return;
+        }
+
+        if (confirmedUser) {
+          setAuthUser(confirmedUser);
+          setAuthMessage("Email confirmed. You're logged in to ConceptIQ.");
+          await loadRemoteUserProfile(confirmedUser);
+          navigate("settings");
+          return;
+        }
+
+        const { data, error } = await supabase!.auth.getSession();
+
+        if (!active) {
+          return;
+        }
+
+        if (error) {
+          setAppError(appErrorMessage(error, "Could not load Supabase session."));
+        }
+
+        const user = data.session?.user ?? null;
+        setAuthUser(user);
+
+        if (user) {
+          await loadRemoteUserProfile(user);
+        }
+      } catch (error) {
+        if (active) {
+          setAppError(appErrorMessage(error, "Could not complete email confirmation."));
+          navigate("settings");
+        }
+      } finally {
+        if (active) {
+          setAuthLoading(false);
+        }
       }
-
-      if (error) {
-        setAppError(error.message);
-      }
-
-      const user = data.session?.user ?? null;
-      setAuthUser(user);
-
-      if (user) {
-        await loadRemoteUserProfile(user);
-      }
-
-      setAuthLoading(false);
     }
 
     const {
@@ -275,7 +300,7 @@ export default function App() {
     if (error) {
       setAppError(error.message);
     } else if (!data.session) {
-      setAuthMessage("Account created. Check your email if confirmation is enabled for this Supabase project.");
+      setAuthMessage("Account created. Confirm your email and this browser will log you in automatically.");
     } else {
       setAuthMessage("Account created. Your Supabase profile is active.");
       navigate("settings");
