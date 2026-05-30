@@ -55,6 +55,34 @@ create table if not exists public.user_achievements (
   primary key (user_id, achievement_id)
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fallback_username text := coalesce(nullif(split_part(new.email, '@', 1), ''), 'conceptiq-user');
+  next_username text := coalesce(nullif(new.raw_user_meta_data ->> 'username', ''), fallback_username);
+begin
+  insert into public.profiles (id, username, display_name)
+  values (
+    new.id,
+    next_username,
+    coalesce(nullif(new.raw_user_meta_data ->> 'display_name', ''), next_username)
+  )
+  on conflict (id) do nothing;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
+
 create index if not exists profiles_conceptiq_score_idx on public.profiles (conceptiq_score desc);
 create index if not exists profiles_average_reaction_time_idx on public.profiles (average_reaction_time asc);
 create index if not exists attempts_user_created_at_idx on public.attempts (user_id, created_at desc);

@@ -28,6 +28,7 @@ import {
   saveProfile,
   saveSessionGameCount,
 } from "./utils/storage";
+import { appErrorMessage } from "./utils/errors";
 
 const navigation: Array<{ key: PageKey; label: string; icon: ReactNode }> = [
   { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
@@ -138,7 +139,7 @@ export default function App() {
       setProfile(remoteProfile);
       setLastResult(remoteProfile.history[0] ?? null);
     } catch (error) {
-      setAppError(error instanceof Error ? error.message : "Could not load Supabase profile.");
+      setAppError(appErrorMessage(error, "Could not load Supabase profile."));
     } finally {
       setDataLoading(false);
     }
@@ -164,7 +165,7 @@ export default function App() {
         },
       });
     } catch (error) {
-      setAppError(error instanceof Error ? error.message : "Could not save profile settings.");
+      setAppError(appErrorMessage(error, "Could not save profile settings."));
     } finally {
       setDataLoading(false);
     }
@@ -187,7 +188,7 @@ export default function App() {
       try {
         await saveRemoteGameState(authUser.id, updated.profile, updated.result);
       } catch (error) {
-        setAppError(error instanceof Error ? error.message : "Could not save attempt to Supabase.");
+        setAppError(appErrorMessage(error, "Could not save attempt to Supabase."));
       } finally {
         setDataLoading(false);
       }
@@ -219,7 +220,7 @@ export default function App() {
       setLastResult(null);
       navigate("home");
     } catch (error) {
-      setAppError(error instanceof Error ? error.message : "Could not reset Supabase progress.");
+      setAppError(appErrorMessage(error, "Could not reset Supabase progress."));
     } finally {
       setDataLoading(false);
     }
