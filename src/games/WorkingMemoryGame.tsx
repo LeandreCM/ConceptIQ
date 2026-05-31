@@ -79,7 +79,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
     <div className="surface p-5">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white/56">Game B</p>
+          <p className="text-sm font-semibold text-white/56">Memory round</p>
           <h2 className="text-2xl font-bold">Working Memory</h2>
         </div>
         <button className="btn-primary" type="button" onClick={startRound}>

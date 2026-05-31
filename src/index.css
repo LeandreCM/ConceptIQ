@@ -17,9 +17,9 @@
 html {
   min-height: 100%;
   background:
-    radial-gradient(circle at 12% 8%, rgba(54, 243, 255, 0.16), transparent 32rem),
-    radial-gradient(circle at 85% 0%, rgba(109, 255, 157, 0.1), transparent 28rem),
-    #070812;
+    linear-gradient(145deg, rgba(54, 243, 255, 0.12), transparent 34%),
+    linear-gradient(315deg, rgba(255, 95, 162, 0.1), transparent 38%),
+    linear-gradient(180deg, #0d0e19 0%, #070812 52%, #05060c 100%);
 }
 
 body {
@@ -27,6 +27,7 @@ body {
   min-height: 100vh;
   margin: 0;
   color: #f7fbff;
+  background: transparent;
 }
 
 button,
@@ -46,26 +47,72 @@ input:focus-visible {
 
 @layer components {
   .surface {
-    @apply rounded-lg border border-white/10 bg-panel/84 shadow-glow backdrop-blur;
+    @apply rounded-lg border border-white/10 bg-panel/86 shadow-glow backdrop-blur-xl;
   }
 
   .surface-soft {
-    @apply rounded-lg border border-white/10 bg-panelSoft/78 backdrop-blur;
+    @apply rounded-lg border border-white/10 bg-white/7 backdrop-blur-xl;
+  }
+
+  .surface-gradient {
+    @apply rounded-lg border border-white/10 bg-gradient-to-br from-white/14 via-white/8 to-white/5 shadow-glow backdrop-blur-xl;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-pulse px-4 py-2.5 font-semibold text-ink transition hover:bg-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-pulse px-4 py-2.5 font-bold text-ink transition duration-200 hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/7 px-4 py-2.5 font-semibold text-white transition hover:border-pulse/50 hover:bg-pulse/10 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/7 px-4 py-2.5 font-bold text-white transition duration-200 hover:border-pulse/50 hover:bg-pulse/10 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-icon {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/7 text-white transition hover:border-pulse/50 hover:bg-pulse/10;
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 bg-white/7 text-white transition duration-200 hover:border-pulse/50 hover:bg-pulse/10;
   }
 
   .pill {
-    @apply rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-semibold text-white/78;
+    @apply rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-bold text-white/78;
   }
+
+  .chip {
+    @apply inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-sm font-bold text-white/72 transition duration-200 hover:border-pulse/40 hover:bg-pulse/10 hover:text-white;
+  }
+
+  .chip-active {
+    @apply border-pulse/50 bg-pulse text-ink shadow-glow hover:bg-white hover:text-ink;
+  }
+}
+
+@keyframes score-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes unlock-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.score-pop {
+  animation: score-pop 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.unlock-pop {
+  animation: unlock-pop 420ms ease-out both;
 }

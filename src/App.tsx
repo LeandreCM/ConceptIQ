@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { Award, Brain, Home, Menu, Play, Settings as SettingsIcon, Trophy, User, X } from "lucide-react";
+import { Award, Brain, Home, Play, Settings as SettingsIcon, Trophy, User } from "lucide-react";
+import { BottomNavigation } from "./components/BottomNavigation";
 import { Achievements } from "./pages/Achievements";
 import { Dashboard } from "./pages/Dashboard";
 import { Leaderboard } from "./pages/Leaderboard";
@@ -31,19 +32,19 @@ import {
 import { appErrorMessage } from "./utils/errors";
 import { completeEmailConfirmationLogin } from "./utils/authCallback";
 
-const navigation: Array<{ key: PageKey; label: string; icon: ReactNode }> = [
+const primaryNavigation: Array<{ key: PageKey; label: string; icon: ReactNode }> = [
   { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
-  { key: "play", label: "Play", icon: <Play className="h-4 w-4" /> },
-  { key: "results", label: "Results", icon: <Brain className="h-4 w-4" /> },
+  { key: "play", label: "Train", icon: <Play className="h-4 w-4" /> },
   { key: "leaderboard", label: "Leaderboard", icon: <Trophy className="h-4 w-4" /> },
-  { key: "achievements", label: "Achievements", icon: <Award className="h-4 w-4" /> },
   { key: "profile", label: "Cognitive Profile", icon: <User className="h-4 w-4" /> },
-  { key: "settings", label: "Settings", icon: <SettingsIcon className="h-4 w-4" /> },
+  { key: "achievements", label: "Achievements", icon: <Award className="h-4 w-4" /> },
 ];
+
+const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "settings"];
 
 function pageFromHash(): PageKey {
   const raw = window.location.hash.replace("#", "");
-  return navigation.some((item) => item.key === raw) ? (raw as PageKey) : "home";
+  return allPages.includes(raw as PageKey) ? (raw as PageKey) : "home";
 }
 
 function authRedirectUrl() {
@@ -55,7 +56,6 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
   const [lastResult, setLastResult] = useState<GameResult | null>(() => loadLastResult());
   const [page, setPage] = useState<PageKey>(() => pageFromHash());
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
@@ -151,7 +151,6 @@ export default function App() {
 
   function navigate(nextPage: PageKey) {
     setPage(nextPage);
-    setMobileOpen(false);
     window.location.hash = nextPage;
   }
 
@@ -358,70 +357,36 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/86 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-ink/88 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <button type="button" onClick={() => navigate("home")} className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-pulse text-ink">
-              <Brain className="h-6 w-6" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-pulse text-ink shadow-glow">
+              <Brain className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-xl font-black">ConceptIQ</span>
-              <span className="block text-xs font-semibold text-white/50">{unlockedLabel}</span>
+              <span className="block text-lg font-black leading-tight">ConceptIQ</span>
+              <span className="block text-xs font-bold text-white/50">{authUser ? "Synced account" : "Local demo"}</span>
             </span>
           </button>
 
-          <nav className="hidden items-center gap-1 lg:flex">
-            {navigation.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => navigate(item.key)}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                  page === item.key ? "bg-pulse text-ink" : "text-white/68 hover:bg-white/8 hover:text-white"
-                }`}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
-          </nav>
-
-          <button
-            type="button"
-            onClick={() => navigate("settings")}
-            className="hidden min-w-36 rounded-lg border border-white/10 bg-white/6 px-3 py-2 text-left text-xs font-semibold text-white/72 transition hover:border-pulse/40 hover:bg-pulse/10 xl:block"
-          >
-            <span className="block text-white">{authUser ? profile.displayName || profile.username : "Demo mode"}</span>
-            <span className="block truncate text-white/48">{authUser?.email ?? (isSupabaseConfigured ? "Log in to sync" : "Supabase not configured")}</span>
-          </button>
-
-          <button className="btn-icon lg:hidden" type="button" onClick={() => setMobileOpen((open) => !open)} aria-label="Open menu">
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {mobileOpen ? (
-          <nav className="border-t border-white/10 px-4 py-3 lg:hidden">
-            <div className="grid gap-2">
-              {navigation.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => navigate(item.key)}
-                  className={`inline-flex items-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition ${
-                    page === item.key ? "bg-pulse text-ink" : "bg-white/6 text-white/72"
-                  }`}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              ))}
+          <div className="flex items-center gap-2">
+            <div className="hidden rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-white/66 sm:block">
+              {profile.conceptIQScore} IQ | {unlockedLabel}
             </div>
-          </nav>
-        ) : null}
+            <button className="btn-icon" type="button" onClick={() => navigate("settings")} aria-label="Open settings">
+              <SettingsIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">{pageContent}</main>
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-5 sm:px-6">{pageContent}</main>
+
+      <BottomNavigation
+        items={primaryNavigation}
+        activePage={page}
+        onNavigate={navigate}
+      />
     </div>
   );
 }
