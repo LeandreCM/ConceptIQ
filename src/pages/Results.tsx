@@ -27,8 +27,13 @@ export function Results({ result, onNavigate }: ResultsProps) {
   const previousScore = result.conceptIQBefore ?? 0;
   const newScore = result.conceptIQAfter ?? previousScore;
   const scoreChange = result.conceptIQChange ?? newScore - previousScore;
-  const recommendedLabel = result.recommendedGameType ? categoryLabel(result.recommendedGameType) : "Training";
+  const relatedDomain = result.cognitiveDomainName ?? categoryLabel(result.gameType);
+  const gameName = result.cognitiveGameName ?? categoryLabel(result.gameType);
+  const recommendedLabel = result.recommendedCognitiveGameName ?? (result.recommendedGameType ? categoryLabel(result.recommendedGameType) : "Training");
   const improved = result.bestStatImproved ?? result.whatImproved;
+  const domainScoreBefore = result.domainScoreBefore ?? previousScore;
+  const domainScoreAfter = result.domainScoreAfter ?? domainScoreBefore;
+  const domainScoreChange = result.domainScoreChange ?? domainScoreAfter - domainScoreBefore;
 
   function playAgain() {
     sessionStorage.setItem("conceptiq-preferred-game", currentResult.recommendedGameType ?? currentResult.gameType);
@@ -38,7 +43,7 @@ export function Results({ result, onNavigate }: ResultsProps) {
   return (
     <div className="space-y-5">
       <section className="surface-gradient overflow-hidden p-5 text-center">
-        <p className="text-sm font-bold uppercase text-white/50">{categoryLabel(result.gameType)} complete</p>
+        <p className="text-sm font-bold uppercase text-white/50">{gameName} complete</p>
         <div className="score-pop mt-5">
           <p className={`text-7xl font-black leading-none ${scoreChange >= 0 ? "text-mint" : "text-bloom"}`}>
             {formatSigned(scoreChange)}
@@ -83,6 +88,19 @@ export function Results({ result, onNavigate }: ResultsProps) {
             </div>
           </div>
         </div>
+
+        <div className="surface p-5">
+          <div className="flex gap-4">
+            <div className="rounded-lg bg-pulse/15 p-3 text-pulse">
+              <Brain className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-sm font-bold uppercase text-white/50">Related domain</p>
+              <h2 className="mt-1 text-2xl font-black">{relatedDomain}</h2>
+              <p className="mt-2 text-sm leading-6 text-white/62">Skill tested: {result.skillTested ?? "Cognitive performance"}</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="surface p-5">
@@ -90,10 +108,11 @@ export function Results({ result, onNavigate }: ResultsProps) {
           <h2 className="text-2xl font-black">Round details</h2>
           <span className="pill">{result.percentileLabel}</span>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Metric label="Game score" value={`${result.normalizedScore}/1000`} />
           <Metric label="Raw score" value={String(result.rawScore)} />
-          <Metric label="Normalized" value={`${result.normalizedScore}/1000`} />
           <Metric label="Duration" value={formatDuration(result.durationMs)} />
+          <Metric label={`${relatedDomain} change`} value={formatSigned(domainScoreChange)} />
         </div>
         <div className="mt-3 grid gap-3">
           {result.metrics.map((metric) => (

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { CognitiveAttempt, GameResult, GameType, LeaderboardUser, UserProfile } from "../types";
+import type { CognitiveDomainId } from "../types/cognition";
 import type { Database, Json } from "../types/supabase";
 import { averageReactionTime } from "./format";
 import { defaultProfile } from "./storage";
@@ -46,13 +47,8 @@ export async function saveRemoteGameState(userId: string, profile: UserProfile, 
   assertSupabase();
 
   const unlockedAchievementIds = result.unlockedAchievementIds ?? [];
-  const userAchievementRows = unlockedAchievementIds.map((achievementId) => ({
-    user_id: userId,
-    achievement_id: achievementId,
-    unlocked_at: result.timestamp,
-  }));
 
-  const profileResult = await supabase!.from("profiles").upsert(profileToProfileUpsert(userId, profile));
+  const profileResult = await upsertProfile(userId, profile);
 
   if (profileResult.error) {
     throw profileResult.error;
@@ -75,7 +71,29 @@ export async function saveRemoteGameState(userId: string, profile: UserProfile, 
     throw attemptResult.error;
   }
 
-  if (userAchievementRows.length) {
+  if (unlockedAchievementIds.length) {
+    const availableAchievements = await supabase!
+      .from("achievements")
+      .select("id")
+      .in("id", unlockedAchievementIds);
+
+    if (availableAchievements.error) {
+      throw availableAchievements.error;
+    }
+
+    const availableIds = new Set((availableAchievements.data ?? []).map((achievement) => achievement.id));
+    const userAchievementRows = unlockedAchievementIds
+      .filter((achievementId) => availableIds.has(achievementId))
+      .map((achievementId) => ({
+        user_id: userId,
+        achievement_id: achievementId,
+        unlocked_at: result.timestamp,
+      }));
+
+    if (!userAchievementRows.length) {
+      return;
+    }
+
     const achievementResult = await supabase!.from("user_achievements").upsert(userAchievementRows);
 
     if (achievementResult.error) {
@@ -86,7 +104,7 @@ export async function saveRemoteGameState(userId: string, profile: UserProfile, 
 
 export async function saveRemoteProfile(userId: string, profile: UserProfile) {
   assertSupabase();
-  const { error } = await supabase!.from("profiles").upsert(profileToProfileUpsert(userId, profile));
+  const { error } = await upsertProfile(userId, profile);
 
   if (error) throw error;
 }
@@ -103,7 +121,7 @@ export async function resetRemoteProgress(userId: string, profile: UserProfile) 
   const [attemptsResult, achievementsResult, profileResult] = await Promise.all([
     supabase!.from("attempts").delete().eq("user_id", userId),
     supabase!.from("user_achievements").delete().eq("user_id", userId),
-    supabase!.from("profiles").upsert(profileToProfileUpsert(userId, resetProfile)),
+    upsertProfile(userId, resetProfile),
   ]);
   const error = attemptsResult.error ?? achievementsResult.error ?? profileResult.error;
 
@@ -185,6 +203,7 @@ function profileRowToUserProfile(row: ProfileRow, attemptRows: AttemptRow[], ach
       memory: row.memory_score,
       pattern: row.pattern_score,
     },
+    domainScores: parseDomainScores(row.domain_scores),
     history,
     attempts,
     failCounts,
@@ -204,6 +223,7 @@ function profileToProfileUpsert(userId: string, profile: UserProfile) {
     reaction_score: profile.categoryScores.reaction,
     memory_score: profile.categoryScores.memory,
     pattern_score: profile.categoryScores.pattern,
+    domain_scores: profile.domainScores,
     games_played: profile.gamesPlayed,
     best_reaction_time: profile.bestReactionTime,
     average_reaction_time: averageReactionTime(profile.history),
@@ -213,6 +233,18 @@ function profileToProfileUpsert(userId: string, profile: UserProfile) {
     fail_counts: profile.failCounts,
     updated_at: new Date().toISOString(),
   };
+}
+
+async function upsertProfile(userId: string, profile: UserProfile) {
+  const row = profileToProfileUpsert(userId, profile);
+  const result = await supabase!.from("profiles").upsert(row);
+
+  if (!isMissingDomainScoresColumn(result.error)) {
+    return result;
+  }
+
+  const { domain_scores: _domainScores, ...fallbackRow } = row;
+  return supabase!.from("profiles").upsert(fallbackRow);
 }
 
 function attemptRowToAttempt(row: AttemptRow): CognitiveAttempt {
@@ -272,6 +304,28 @@ function parseFailCounts(value: Json) {
   }
 
   return defaultProfile.failCounts;
+}
+
+function parseDomainScores(value: Json | undefined) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([key, score]) => [key, Number(score)])
+        .filter(([, score]) => Number.isFinite(score)),
+    ) as Partial<Record<CognitiveDomainId, number>>;
+  }
+
+  return defaultProfile.domainScores;
+}
+
+function isMissingDomainScoresColumn(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const message = "message" in error && typeof error.message === "string" ? error.message : "";
+  const details = "details" in error && typeof error.details === "string" ? error.details : "";
+  return /domain_scores/i.test(`${message} ${details}`) && /column|schema cache|could not find/i.test(`${message} ${details}`);
 }
 
 function assertSupabase() {

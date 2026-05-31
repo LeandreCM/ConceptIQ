@@ -1,5 +1,13 @@
 import type { CategoryScores, CognitiveAttempt, GameResult, GameType, UserProfile } from "../types";
 import { getNewAchievementIds } from "./achievements";
+import {
+  calculateCognitiveScoreBreakdown,
+  getDomainById,
+  getDomainForGameType,
+  getGameById,
+  getGameForGameType,
+  scoreForDomain,
+} from "./cognitiveScoring";
 
 const GAME_WEIGHTS: CategoryScores = {
   reaction: 0.34,
@@ -88,12 +96,36 @@ export function applyGameResultToProfile(
   result: GameResult,
   sessionGameCount: number,
 ) {
+  const domain = result.cognitiveDomainId ? getDomainById(result.cognitiveDomainId) : getDomainForGameType(result.gameType);
+  const cognitiveGame = result.cognitiveGameId ? getGameById(result.cognitiveGameId) : getGameForGameType(result.gameType);
+  const domainScoreBefore = scoreForDomain(profile.categoryScores, domain.id, profile.domainScores);
   const categoryScores = {
     ...profile.categoryScores,
     [result.gameType]: smoothCategoryScore(profile.categoryScores[result.gameType], result.categoryScore),
   };
-  const conceptIQAfter = calculateAbilityScore(categoryScores);
+  const domainScores = {
+    ...profile.domainScores,
+    [domain.id]: smoothCategoryScore(domainScoreBefore, result.categoryScore),
+  };
   const sessions = [...profile.sessions, result.timestamp];
+  const provisionalHistory = [result, ...profile.history];
+  const cognitiveBreakdown = calculateCognitiveScoreBreakdown({
+    ...profile,
+    categoryScores,
+    domainScores,
+    sessions,
+    history: provisionalHistory,
+  });
+  const conceptIQAfter = cognitiveBreakdown.overallConceptIQScore;
+  const domainScoreAfter =
+    cognitiveBreakdown.domainScores.find((domainScore) => domainScore.domainId === domain.id)?.score ?? domainScoreBefore;
+  const recommendedGameType =
+    (cognitiveBreakdown.recommendedGameId
+      ? getGameById(cognitiveBreakdown.recommendedGameId)?.playableGameType
+      : undefined) ?? result.gameType;
+  const recommendedCognitiveGame = cognitiveBreakdown.recommendedGameId
+    ? cognitiveBreakdown.recommendedGameName
+    : undefined;
   const failCounts = {
     ...profile.failCounts,
     [result.gameType]: profile.failCounts[result.gameType] + (result.wasFailure ? 1 : 0),
@@ -106,15 +138,26 @@ export function applyGameResultToProfile(
     conceptIQBefore: profile.conceptIQScore,
     conceptIQAfter,
     conceptIQChange: conceptIQAfter - profile.conceptIQScore,
+    cognitiveDomainId: domain.id,
+    cognitiveDomainName: domain.name,
+    cognitiveGameId: cognitiveGame?.id,
+    cognitiveGameName: cognitiveGame?.name,
+    skillTested: cognitiveGame?.primarySkill ?? domain.primaryMetrics[0],
+    domainScoreBefore,
+    domainScoreAfter,
+    domainScoreChange: domainScoreAfter - domainScoreBefore,
+    recommendedCognitiveDomainId: cognitiveBreakdown.recommendedDomainId,
+    recommendedCognitiveGameId: cognitiveBreakdown.recommendedGameId,
+    recommendedCognitiveGameName: recommendedCognitiveGame,
   };
   const history = [enrichedResult, ...profile.history];
   const attempt = resultToAttempt(enrichedResult);
   const nextProfile: UserProfile = {
     ...profile,
     conceptIQScore: conceptIQAfter,
-    abilityScore: conceptIQAfter,
-    growthScore: calculateGrowthScore(history),
-    consistencyScore: calculateConsistencyScore(sessions),
+    abilityScore: cognitiveBreakdown.abilityScore,
+    growthScore: cognitiveBreakdown.growthScore,
+    consistencyScore: cognitiveBreakdown.consistencyScore,
     gamesPlayed: profile.gamesPlayed + 1,
     bestReactionTime:
       typeof result.reactionTimeMs === "number" && !result.earlyClick
@@ -132,6 +175,7 @@ export function applyGameResultToProfile(
         : profile.bestPatternScore,
     sessions,
     categoryScores,
+    domainScores,
     attempts: [attempt, ...profile.attempts],
     failCounts,
     history,
@@ -139,7 +183,6 @@ export function applyGameResultToProfile(
   };
   const unlockedAchievementIds = getNewAchievementIds(nextProfile);
   const bestStatImproved = getBestStatImproved(profile, nextProfile, enrichedResult);
-  const recommendedGameType = getRecommendedGameType(nextProfile);
   const finalProfile = {
     ...nextProfile,
     achievementsUnlocked: [...new Set([...nextProfile.achievementsUnlocked, ...unlockedAchievementIds])],

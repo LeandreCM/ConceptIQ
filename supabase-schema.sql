@@ -14,6 +14,7 @@ create table if not exists public.profiles (
   reaction_score integer not null default 0 check (reaction_score between 0 and 1000),
   memory_score integer not null default 0 check (memory_score between 0 and 1000),
   pattern_score integer not null default 0 check (pattern_score between 0 and 1000),
+  domain_scores jsonb not null default '{}'::jsonb,
   games_played integer not null default 0 check (games_played >= 0),
   best_reaction_time integer,
   average_reaction_time integer,
@@ -87,6 +88,8 @@ create index if not exists profiles_conceptiq_score_idx on public.profiles (conc
 create index if not exists profiles_average_reaction_time_idx on public.profiles (average_reaction_time asc);
 create index if not exists attempts_user_created_at_idx on public.attempts (user_id, created_at desc);
 create index if not exists attempts_user_game_type_idx on public.attempts (user_id, game_type);
+
+alter table public.profiles add column if not exists domain_scores jsonb not null default '{}'::jsonb;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -165,13 +168,21 @@ values
   ('big-brain', 'Big Brain', 'Reach 500 ConceptIQ Score.', 'score', 500),
   ('galaxy-brain', 'Galaxy Brain', 'Reach 900 ConceptIQ Score.', 'score', 900),
   ('lightning-thinker', 'Lightning Thinker', 'Record a reaction time under 250ms.', 'speed', 250),
-  ('human-calculator', 'Human Calculator', 'Complete a perfect memory round.', 'memory', 1),
+  ('human-calculator', 'Human Calculator', 'Reach 500 in Quantitative Reasoning. Perfect reverse recall counts during the MVP.', 'domain', 500),
   ('pattern-hunter', 'Pattern Hunter', 'Answer 8 or more pattern questions correctly.', 'pattern', 8),
   ('comeback-arc', 'Comeback Arc', 'Improve your ConceptIQ Score by 50 or more in one result.', 'growth', 50),
   ('consistency-beast', 'Consistency Beast', 'Complete 10 sessions within 30 days.', 'consistency', 10),
   ('brain-melt', 'Brain Melt', 'Miss the same type of challenge 5 times.', 'grit', 5),
   ('one-more-rep', 'One More Rep', 'Play 3 games in one browser session.', 'consistency', 3),
-  ('the-outlier', 'The Outlier', 'Reach the top 1% placeholder rank.', 'score', 980)
+  ('the-outlier', 'The Outlier', 'Reach the top 1% placeholder rank.', 'score', 980),
+  ('memory-keeper', 'Memory Keeper', 'Reach 500 in the Memory domain.', 'domain', 500),
+  ('process-master', 'Process Master', 'Complete a future process-memory challenge at high accuracy.', 'domain', 1),
+  ('working-memory-beast', 'Working Memory Beast', 'Reach 500 in the Working Memory domain.', 'domain', 500),
+  ('spatial-wizard', 'Spatial Wizard', 'Reach 500 in the Spatial Reasoning domain.', 'domain', 500),
+  ('logic-lord', 'Logic Lord', 'Reach 500 in the Logic domain.', 'domain', 500),
+  ('focus-monk', 'Focus Monk', 'Reach 500 in the Focus / Attention domain.', 'domain', 500),
+  ('verbal-analyst', 'Verbal Analyst', 'Reach 500 in the Verbal Reasoning domain.', 'domain', 500),
+  ('system-architect', 'System Architect', 'Reach 500 in the Systems Thinking domain.', 'domain', 500)
 on conflict (id) do update set
   name = excluded.name,
   description = excluded.description,

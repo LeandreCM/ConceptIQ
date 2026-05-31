@@ -5,7 +5,9 @@ import { StatCard } from "../components/StatCard";
 import type { PageKey, UserProfile } from "../types";
 import { sessionsInLast30Days } from "../utils/achievements";
 import { categoryLabel, formatScore, formatSigned, relativeDate } from "../utils/format";
-import { getTrainingRecommendation } from "../utils/profileInsights";
+import { calculateCognitiveScoreBreakdown, getDomainById, getGameById } from "../utils/cognitiveScoring";
+
+const PREFERRED_COGNITIVE_GAME_KEY = "conceptiq-preferred-cognitive-game";
 
 interface DashboardProps {
   profile: UserProfile;
@@ -14,13 +16,22 @@ interface DashboardProps {
 
 export function Dashboard({ profile, onNavigate }: DashboardProps) {
   const latestResult = profile.history[0];
-  const recommendation = getTrainingRecommendation(profile, latestResult);
+  const breakdown = calculateCognitiveScoreBreakdown(profile);
+  const recommendedDomain = getDomainById(breakdown.recommendedDomainId);
+  const recommendedGame = breakdown.recommendedGameId ? getGameById(breakdown.recommendedGameId) : undefined;
   const displayName = profile.displayName || profile.username;
   const monthlySessions = sessionsInLast30Days(profile.sessions);
   const weeklyProgress = Math.min(7, monthlySessions);
 
   function continueTraining() {
-    sessionStorage.setItem("conceptiq-preferred-game", recommendation.gameType);
+    if (recommendedGame?.playableGameType) {
+      sessionStorage.setItem("conceptiq-preferred-game", recommendedGame.playableGameType);
+    }
+
+    if (recommendedGame) {
+      sessionStorage.setItem(PREFERRED_COGNITIVE_GAME_KEY, recommendedGame.id);
+    }
+
     onNavigate("play");
   }
 
@@ -58,8 +69,10 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold uppercase text-white/50">Today's training</p>
-            <h2 className="mt-1 text-2xl font-black">{recommendation.label}</h2>
-            <p className="mt-2 text-sm leading-6 text-white/64">{recommendation.reason}</p>
+            <h2 className="mt-1 text-2xl font-black">{recommendedDomain.name}</h2>
+            <p className="mt-2 text-sm leading-6 text-white/64">
+              {recommendedGame ? `Start with ${recommendedGame.name}: ${recommendedGame.description}` : recommendedDomain.description}
+            </p>
           </div>
         </div>
         <button className="btn-primary mt-5 w-full" type="button" onClick={continueTraining}>
@@ -70,9 +83,9 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Ability" value={formatScore(profile.abilityScore)} detail="Current performance" icon={<Sparkles className="h-5 w-5" />} />
-        <StatCard label="Growth" value={formatScore(profile.growthScore)} detail="Recent improvement" icon={<LineChart className="h-5 w-5" />} tone="mint" />
-        <StatCard label="Consistency" value={formatScore(profile.consistencyScore)} detail={`${monthlySessions} sessions in 30 days`} icon={<ShieldCheck className="h-5 w-5" />} tone="solar" />
+        <StatCard label="Ability" value={formatScore(breakdown.abilityScore)} detail="Implemented domains" icon={<Sparkles className="h-5 w-5" />} />
+        <StatCard label="Growth" value={formatScore(breakdown.growthScore)} detail="Recent improvement" icon={<LineChart className="h-5 w-5" />} tone="mint" />
+        <StatCard label="Consistency" value={formatScore(breakdown.consistencyScore)} detail={`${monthlySessions} sessions in 30 days`} icon={<ShieldCheck className="h-5 w-5" />} tone="solar" />
       </section>
 
       <section className="surface p-5">
@@ -107,7 +120,7 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
             <p className="text-sm font-bold text-white/50">Latest result</p>
             {latestResult ? (
               <p className="mt-1 font-bold">
-                {relativeDate(latestResult.timestamp)} | {categoryLabel(latestResult.gameType)}
+                {relativeDate(latestResult.timestamp)} | {latestResult.cognitiveGameName ?? categoryLabel(latestResult.gameType)}
               </p>
             ) : (
               <p className="mt-1 font-bold">No attempts yet</p>

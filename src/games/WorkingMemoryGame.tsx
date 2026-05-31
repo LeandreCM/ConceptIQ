@@ -34,7 +34,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
 
   function submit() {
     const answer = input.replace(/\s+/g, "").toUpperCase();
-    const target = sequence.join("").toUpperCase();
+    const target = sequence.slice().reverse().join("").toUpperCase();
     const correctCharacters = target
       .split("")
       .filter((character, index) => character === answer[index]).length;
@@ -53,7 +53,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
     onComplete({
       id: buildResultId("memory"),
       gameType: "memory",
-      title: perfectRound ? "Perfect Memory Round" : `${Math.round(accuracy * 100)}% recall`,
+      title: perfectRound ? "Perfect Reverse Sequence" : `${Math.round(accuracy * 100)}% reverse recall`,
       rawScore: correctCharacters,
       categoryScore,
       normalizedScore: categoryScore,
@@ -65,7 +65,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
       wasFailure: accuracy < 0.5,
       timestamp: new Date().toISOString(),
       percentileLabel: scorePercentileLabel(categoryScore),
-      whatImproved: perfectRound ? "Sequence span increased for your next memory round." : "Recall accuracy was logged for calibration.",
+      whatImproved: perfectRound ? "Reverse sequence span increased for your next memory round." : "Reverse recall accuracy was logged for calibration.",
       trainNext: perfectRound ? "Try pattern reasoning while your working memory is warm." : "Repeat memory with a shorter sequence and rebuild accuracy.",
       metrics: [
         { label: "Sequence length", value: String(length) },
@@ -80,7 +80,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-white/56">Memory round</p>
-          <h2 className="text-2xl font-bold">Working Memory</h2>
+          <h2 className="text-2xl font-bold">Reverse Sequence</h2>
         </div>
         <button className="btn-primary" type="button" onClick={startRound}>
           <Play className="h-4 w-4" />
@@ -116,12 +116,12 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
 
       <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
         <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-white/64">Type the sequence without spaces</span>
+          <span className="mb-2 block text-sm font-semibold text-white/64">Type the sequence backward without spaces</span>
           <input
             className="w-full rounded-lg border border-white/10 bg-white/8 px-4 py-3 text-lg font-semibold text-white placeholder:text-white/34"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Example: 274AK"
+            placeholder="Example: KA472"
             disabled={!started || visible}
           />
         </label>

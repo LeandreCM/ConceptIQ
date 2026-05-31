@@ -15,6 +15,7 @@ export interface Database {
           reaction_score: number;
           memory_score: number;
           pattern_score: number;
+          domain_scores: Json | null;
           games_played: number;
           best_reaction_time: number | null;
           average_reaction_time: number | null;
@@ -36,6 +37,7 @@ export interface Database {
           reaction_score?: number;
           memory_score?: number;
           pattern_score?: number;
+          domain_scores?: Json | null;
           games_played?: number;
           best_reaction_time?: number | null;
           average_reaction_time?: number | null;

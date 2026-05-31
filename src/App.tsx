@@ -5,6 +5,7 @@ import { Award, Brain, Home, Play, Settings as SettingsIcon, Trophy, User } from
 import { BottomNavigation } from "./components/BottomNavigation";
 import { Achievements } from "./pages/Achievements";
 import { Dashboard } from "./pages/Dashboard";
+import { Debug } from "./pages/Debug";
 import { Leaderboard } from "./pages/Leaderboard";
 import { Play as PlayPage } from "./pages/Play";
 import { Profile } from "./pages/Profile";
@@ -40,9 +41,13 @@ const primaryNavigation: Array<{ key: PageKey; label: string; icon: ReactNode }>
   { key: "achievements", label: "Achievements", icon: <Award className="h-4 w-4" /> },
 ];
 
-const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "settings"];
+const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "settings", "debug"];
 
-function pageFromHash(): PageKey {
+function pageFromLocation(): PageKey {
+  if (window.location.pathname.replace(/\/$/, "").endsWith("/debug")) {
+    return "debug";
+  }
+
   const raw = window.location.hash.replace("#", "");
   return allPages.includes(raw as PageKey) ? (raw as PageKey) : "home";
 }
@@ -55,7 +60,7 @@ function authRedirectUrl() {
 export default function App() {
   const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
   const [lastResult, setLastResult] = useState<GameResult | null>(() => loadLastResult());
-  const [page, setPage] = useState<PageKey>(() => pageFromHash());
+  const [page, setPage] = useState<PageKey>(() => pageFromLocation());
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
@@ -63,9 +68,13 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleHashChange = () => setPage(pageFromHash());
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    const handleLocationChange = () => setPage(pageFromLocation());
+    window.addEventListener("hashchange", handleLocationChange);
+    window.addEventListener("popstate", handleLocationChange);
+    return () => {
+      window.removeEventListener("hashchange", handleLocationChange);
+      window.removeEventListener("popstate", handleLocationChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -151,7 +160,13 @@ export default function App() {
 
   function navigate(nextPage: PageKey) {
     setPage(nextPage);
-    window.location.hash = nextPage;
+    if (nextPage === "debug") {
+      window.history.pushState({}, "", "/debug");
+      return;
+    }
+
+    const path = window.location.pathname.replace(/\/debug\/?$/, "/");
+    window.history.pushState({}, "", `${path || "/"}#${nextPage}`);
   }
 
   async function loadRemoteUserProfile(user: SupabaseUser) {
@@ -337,6 +352,7 @@ export default function App() {
     profile: <Profile profile={profile} onProfileChange={updateProfile} onReset={handleReset} />,
     leaderboard: <Leaderboard profile={profile} useRemote={Boolean(authUser)} currentUserId={authUser?.id ?? null} />,
     achievements: <Achievements profile={profile} />,
+    debug: <Debug profile={profile} />,
     settings: (
       <Settings
         profile={profile}

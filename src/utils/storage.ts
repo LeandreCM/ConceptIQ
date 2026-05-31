@@ -22,6 +22,7 @@ export const defaultProfile: UserProfile = {
     memory: 0,
     pattern: 0,
   },
+  domainScores: {},
   history: [],
   attempts: [],
   failCounts: {
@@ -49,6 +50,7 @@ export function loadProfile(): UserProfile {
       ...parsed,
       displayName: parsed.displayName ?? parsed.username ?? defaultProfile.displayName,
       categoryScores: { ...defaultProfile.categoryScores, ...parsed.categoryScores },
+      domainScores: { ...defaultProfile.domainScores, ...parsed.domainScores },
       failCounts: { ...defaultProfile.failCounts, ...parsed.failCounts },
       achievementsUnlocked: parsed.achievementsUnlocked ?? [],
       sessions: parsed.sessions ?? [],

@@ -1,5 +1,6 @@
 import type { LeaderboardUser } from "../types";
-import { formatMs, formatScore, strongestCategory } from "../utils/format";
+import { formatMs, formatScore } from "../utils/format";
+import { strongestCognitiveDomainName } from "../utils/cognitiveScoring";
 import { RankBadge } from "./RankBadge";
 
 interface LeaderboardTableProps {
@@ -41,7 +42,7 @@ export function LeaderboardTable({ users }: LeaderboardTableProps) {
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <Meta label="Strongest" value={strongestCategory(user.categoryScores)} />
+                  <Meta label="Strongest" value={strongestCognitiveDomainName(user.categoryScores)} />
                   <Meta label="Avg reaction" value={formatMs(user.averageReactionTime)} />
                   <Meta label="Best reaction" value={formatMs(user.bestReactionTime)} />
                 </div>

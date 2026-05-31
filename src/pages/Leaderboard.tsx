@@ -1,31 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDownWideNarrow, Trophy } from "lucide-react";
 import { LeaderboardTable } from "../components/LeaderboardTable";
+import { cognitiveDomains } from "../data/cognitiveDomains";
 import { mockLeaderboardUsers } from "../data/mockLeaderboard";
 import type { LeaderboardUser, UserProfile } from "../types";
+import type { CognitiveDomainId } from "../types/cognition";
 import { averageReactionTime as getAverageReactionTime } from "../utils/format";
 import { fetchRemoteLeaderboard } from "../utils/supabaseData";
 import { appErrorMessage } from "../utils/errors";
+import { calculateCognitiveScoreBreakdown, domainScoreForLeaderboardUser } from "../utils/cognitiveScoring";
 
 type SortKey =
   | "overall"
   | "growth"
   | "consistency"
-  | "reaction"
-  | "memory"
-  | "pattern"
-  | "fastest"
-  | "improved";
+  | CognitiveDomainId;
 
 const sortButtons: Array<{ key: SortKey; label: string }> = [
   { key: "overall", label: "Overall" },
   { key: "growth", label: "Growth" },
   { key: "consistency", label: "Consistency" },
-  { key: "reaction", label: "Reaction" },
-  { key: "memory", label: "Memory" },
-  { key: "pattern", label: "Pattern" },
-  { key: "fastest", label: "Fastest" },
-  { key: "improved", label: "Most Improved" },
+  ...cognitiveDomains.map((domain) => ({ key: domain.id, label: domain.name })),
 ];
 
 interface LeaderboardProps {
@@ -78,6 +73,8 @@ export function Leaderboard({ profile, useRemote = false, currentUserId = null }
   }, [useRemote]);
 
   const users = useMemo(() => {
+    const profileBreakdown = calculateCognitiveScoreBreakdown(profile);
+
     if (useRemote) {
       return remoteUsers
         .map((user) => ({
@@ -90,9 +87,9 @@ export function Leaderboard({ profile, useRemote = false, currentUserId = null }
     const currentUser: LeaderboardUser = {
       username: `${profile.username} (You)`,
       displayName: profile.displayName,
-      conceptIQScore: profile.conceptIQScore,
-      growthScore: profile.growthScore,
-      consistencyScore: profile.consistencyScore,
+      conceptIQScore: profileBreakdown.overallConceptIQScore,
+      growthScore: profileBreakdown.growthScore,
+      consistencyScore: profileBreakdown.consistencyScore,
       categoryScores: profile.categoryScores,
       bestReactionTime: profile.bestReactionTime,
       averageReactionTime: getAverageReactionTime(profile.history),
@@ -113,7 +110,7 @@ export function Leaderboard({ profile, useRemote = false, currentUserId = null }
             <p className="text-sm font-bold uppercase text-white/50">Leaderboard</p>
             <h1 className="mt-1 text-3xl font-black">Compare your pace</h1>
             <p className="mt-2 text-sm leading-6 text-white/64">
-              Default ranking shows ConceptIQ, Growth, and Consistency. Reaction filters use average speed.
+              Default ranking shows ConceptIQ, Growth, and Consistency. Domain filters rank the current cognitive architecture.
             </p>
           </div>
         </div>
@@ -152,42 +149,12 @@ export function Leaderboard({ profile, useRemote = false, currentUserId = null }
 function sortUsers(a: LeaderboardUser, b: LeaderboardUser, sortKey: SortKey) {
   switch (sortKey) {
     case "growth":
-    case "improved":
       return b.growthScore - a.growthScore;
     case "consistency":
       return b.consistencyScore - a.consistencyScore;
-    case "reaction":
-      return sortByAverageReaction(a, b);
-    case "memory":
-      return b.categoryScores.memory - a.categoryScores.memory;
-    case "pattern":
-      return b.categoryScores.pattern - a.categoryScores.pattern;
-    case "fastest":
-      return sortByAverageReaction(a, b);
     case "overall":
-    default:
       return b.conceptIQScore - a.conceptIQScore;
+    default:
+      return domainScoreForLeaderboardUser(b, sortKey) - domainScoreForLeaderboardUser(a, sortKey);
   }
-}
-
-function sortByAverageReaction(a: LeaderboardUser, b: LeaderboardUser) {
-  const aTime = a.averageReactionTime ?? a.bestReactionTime ?? Number.POSITIVE_INFINITY;
-  const bTime = b.averageReactionTime ?? b.bestReactionTime ?? Number.POSITIVE_INFINITY;
-
-  if (aTime !== bTime) {
-    return aTime - bTime;
-  }
-
-  return sortByBestReaction(a, b);
-}
-
-function sortByBestReaction(a: LeaderboardUser, b: LeaderboardUser) {
-  const aTime = a.bestReactionTime ?? Number.POSITIVE_INFINITY;
-  const bTime = b.bestReactionTime ?? Number.POSITIVE_INFINITY;
-
-  if (aTime !== bTime) {
-    return aTime - bTime;
-  }
-
-  return b.categoryScores.reaction - a.categoryScores.reaction;
 }

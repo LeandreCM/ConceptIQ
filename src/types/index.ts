@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { CognitiveDomainId } from "./cognition";
 
 export type PageKey =
   | "home"
@@ -7,7 +8,8 @@ export type PageKey =
   | "profile"
   | "leaderboard"
   | "achievements"
-  | "settings";
+  | "settings"
+  | "debug";
 
 export type GameType = "reaction" | "memory" | "pattern";
 
@@ -47,6 +49,17 @@ export interface GameResult {
   bestStatImproved?: string;
   recommendedGameType?: GameType;
   unlockedAchievementIds?: string[];
+  cognitiveDomainId?: CognitiveDomainId;
+  cognitiveDomainName?: string;
+  cognitiveGameId?: string;
+  cognitiveGameName?: string;
+  skillTested?: string;
+  domainScoreBefore?: number;
+  domainScoreAfter?: number;
+  domainScoreChange?: number;
+  recommendedCognitiveDomainId?: CognitiveDomainId;
+  recommendedCognitiveGameId?: string;
+  recommendedCognitiveGameName?: string;
 }
 
 export interface CognitiveAttempt {
@@ -77,6 +90,7 @@ export interface UserProfile {
   achievementsUnlocked: string[];
   sessions: string[];
   categoryScores: CategoryScores;
+  domainScores: Partial<Record<CognitiveDomainId, number>>;
   history: GameResult[];
   attempts: CognitiveAttempt[];
   failCounts: CategoryScores;
@@ -94,7 +108,7 @@ export interface AchievementDefinition {
   id: string;
   name: string;
   description: string;
-  category: "score" | "speed" | "memory" | "pattern" | "growth" | "consistency" | "grit";
+  category: "score" | "speed" | "memory" | "pattern" | "growth" | "consistency" | "grit" | "domain";
   target: number;
   icon: ReactNode;
 }
