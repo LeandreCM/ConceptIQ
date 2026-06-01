@@ -5,7 +5,7 @@ import type { GameResult, GameType } from "../types";
 import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 import { buildResultId, scorePercentileLabel } from "../utils/scoring";
 
-const STIMULUS_FLASH_MS = 1400;
+const STIMULUS_FLASH_MS = 1000;
 
 interface MiniCognitiveGameProps {
   domain: CognitiveDomain;
