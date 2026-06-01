@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Play, RotateCcw } from "lucide-react";
 import { getMiniGameChallenges } from "../data/cognitiveGameChallenges";
 import type { GameResult, GameType } from "../types";
 import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 import { buildResultId, scorePercentileLabel } from "../utils/scoring";
+
+const STIMULUS_FLASH_MS = 1400;
 
 interface MiniCognitiveGameProps {
   domain: CognitiveDomain;
@@ -17,23 +19,64 @@ export function MiniCognitiveGame({ domain, game, onComplete }: MiniCognitiveGam
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [stimulusIndex, setStimulusIndex] = useState(0);
+  const [stimulusComplete, setStimulusComplete] = useState(false);
   const startedAtRef = useRef(0);
   const currentChallenge = challenges[questionIndex];
+  const stimulusItems = currentChallenge.stimulus ?? [];
+  const hasTimedStimulus = stimulusItems.length > 0;
+  const choicesVisible = !hasTimedStimulus || stimulusComplete;
+
+  useEffect(() => {
+    const items = currentChallenge.stimulus ?? [];
+
+    if (!started || !items.length) {
+      setStimulusIndex(0);
+      setStimulusComplete(false);
+      return;
+    }
+
+    setSelectedAnswer(null);
+    setStimulusIndex(0);
+    setStimulusComplete(false);
+
+    let nextIndex = 0;
+    const timer = window.setInterval(() => {
+      nextIndex += 1;
+
+      if (nextIndex >= items.length) {
+        window.clearInterval(timer);
+        setStimulusComplete(true);
+        setStimulusIndex(items.length - 1);
+        return;
+      }
+
+      setStimulusIndex(nextIndex);
+    }, STIMULUS_FLASH_MS);
+
+    return () => window.clearInterval(timer);
+  }, [currentChallenge, started]);
 
   function start() {
     setStarted(true);
     setQuestionIndex(0);
     setAnswers([]);
     setSelectedAnswer(null);
+    setStimulusIndex(0);
+    setStimulusComplete(false);
     startedAtRef.current = performance.now();
   }
 
   function chooseAnswer(answerIndex: number) {
+    if (!choicesVisible) {
+      return;
+    }
+
     setSelectedAnswer(answerIndex);
   }
 
   function submitAnswer() {
-    if (selectedAnswer === null) {
+    if (!choicesVisible || selectedAnswer === null) {
       return;
     }
 
@@ -131,37 +174,62 @@ export function MiniCognitiveGame({ domain, game, onComplete }: MiniCognitiveGam
 
       <div className="rounded-lg border border-white/10 bg-white/7 p-5">
         <p className="text-lg font-black leading-7">{currentChallenge.prompt}</p>
-        {currentChallenge.stimulus ? (
-          <div className="mt-5 flex flex-wrap justify-center gap-3">
-            {currentChallenge.stimulus.map((item, index) => (
-              <span key={`${item}-${index}`} className="flex h-14 min-w-14 items-center justify-center rounded-lg bg-pulse/14 px-4 text-2xl font-black">
-                {item}
-              </span>
-            ))}
+        {hasTimedStimulus ? (
+          <div className="mt-5 flex flex-col items-center gap-4">
+            <div className="flex h-28 w-28 items-center justify-center rounded-full border border-pulse/30 bg-pulse/12 shadow-glow">
+              {stimulusComplete ? (
+                <span className="text-sm font-black uppercase text-pulse">Choose</span>
+              ) : (
+                <span key={`${questionIndex}-${stimulusIndex}`} className="animate-pulse text-5xl font-black text-pulse">
+                  {stimulusItems[stimulusIndex]}
+                </span>
+              )}
+            </div>
+            <div className="w-full max-w-sm">
+              <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase text-white/46">
+                <span>{stimulusComplete ? "Sequence complete" : `Flash ${stimulusIndex + 1} of ${stimulusItems.length}`}</span>
+                <span>{(STIMULUS_FLASH_MS / 1000).toFixed(1)}s each</span>
+              </div>
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${stimulusItems.length}, minmax(0, 1fr))` }}>
+                {stimulusItems.map((item, index) => (
+                  <span
+                    key={`${item}-${index}`}
+                    className={`h-2 rounded-full ${index <= stimulusIndex ? "bg-pulse" : "bg-white/12"}`}
+                    aria-label={`Stimulus ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {currentChallenge.options.map((option, index) => (
-          <button
-            key={`${option}-${index}`}
-            type="button"
-            onClick={() => chooseAnswer(index)}
-            className={`btn-secondary min-h-16 justify-between text-left ${selectedAnswer === index ? "border-pulse/60 bg-pulse/10" : ""}`}
-          >
-            <span>{option}</span>
-            <CheckCircle2 className={`h-5 w-5 ${selectedAnswer === index ? "text-pulse" : "text-white/36"}`} />
-          </button>
-        ))}
-      </div>
+      {choicesVisible ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {currentChallenge.options.map((option, index) => (
+            <button
+              key={`${option}-${index}`}
+              type="button"
+              onClick={() => chooseAnswer(index)}
+              className={`btn-secondary min-h-16 justify-between text-left ${selectedAnswer === index ? "border-pulse/60 bg-pulse/10" : ""}`}
+            >
+              <span>{option}</span>
+              <CheckCircle2 className={`h-5 w-5 ${selectedAnswer === index ? "text-pulse" : "text-white/36"}`} />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/7 p-4 text-center">
+          <p className="text-sm font-bold text-white/58">Keep the running total in mind. Choices unlock when the sequence ends.</p>
+        </div>
+      )}
 
       <div className="mt-5 rounded-lg bg-white/7 p-4">
         <p className="text-sm font-bold text-white/50">Skill tested</p>
         <p className="mt-1 font-black">{game.primarySkill}</p>
       </div>
 
-      <button className="btn-primary mt-5 w-full" type="button" onClick={submitAnswer} disabled={selectedAnswer === null}>
+      <button className="btn-primary mt-5 w-full" type="button" onClick={submitAnswer} disabled={!choicesVisible || selectedAnswer === null}>
         {questionIndex + 1 >= challenges.length ? "Finish Round" : "Next Question"}
       </button>
     </div>
