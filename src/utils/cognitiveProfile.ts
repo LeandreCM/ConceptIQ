@@ -306,9 +306,9 @@ export function createMockAssessmentResult(now = new Date().toISOString()): Cogn
     id: `mock-symbol-${Date.now()}`,
     source: "mock",
     gameType: "memory",
-    cognitiveGameId: "symbol-accuracy-drill",
-    cognitiveGameName: "Symbol Accuracy Drill",
-    cognitiveDomainId: "quantitative-reasoning",
+    cognitiveGameId: "symbol-accuracy",
+    cognitiveGameName: "Symbol Accuracy",
+    cognitiveDomainId: "perception",
     normalizedScore: 420,
     rawScore: 4,
     mistakes: 3,
@@ -360,15 +360,15 @@ function calculateRepeatedPatternSignals(history: GameResult[], result: Cognitiv
   const confidence = clamp(68 + weakResults.length * 4, 68, 86);
   const detail = `Repeated pattern: ${weakResults.length}/${related.length} recent related attempts had low accuracy or elevated mistakes.`;
 
+  if (/flash|math|number/i.test(`${result.cognitiveGameId} ${result.cognitiveGameName}`)) {
+    return [scoreSignal("math_accuracy_score", 40, confidence, "error_pattern", "Repeated math errors", detail, result)];
+  }
+
   if (result.cognitiveDomainId === "working-memory") {
     return [scoreSignal("working_memory_score", 38, confidence, "error_pattern", "Repeated working-memory errors", detail, result)];
   }
 
-  if (result.cognitiveDomainId === "quantitative-reasoning") {
-    return [scoreSignal("math_accuracy_score", 40, confidence, "error_pattern", "Repeated math errors", detail, result)];
-  }
-
-  if (result.cognitiveDomainId === "focus-attention") {
+  if (result.cognitiveDomainId === "attention") {
     return [scoreSignal("attention_score", 40, confidence, "error_pattern", "Repeated attention errors", detail, result)];
   }
 
@@ -389,27 +389,29 @@ function domainToSignals(
   const detail = `${result.cognitiveGameName ?? "Assessment"} produced a normalized score of ${result.normalizedScore}/1000 with ${result.mistakes} mistake${result.mistakes === 1 ? "" : "s"}.`;
 
   switch (domainId) {
-    case "memory":
+    case "learning-knowledge-integration":
       return [scoreSignal("long_term_memory_score", score, confidence, "game", "Memory performance", detail, result)];
     case "working-memory":
       return [scoreSignal("working_memory_score", score, confidence, "game", "Working-memory performance", detail, result)];
     case "spatial-reasoning":
       return [scoreSignal("spatial_reasoning_score", score, confidence, "game", "Spatial performance", detail, result)];
-    case "logic":
-    case "systems-thinking":
+    case "logic-reasoning":
+    case "causal-reasoning":
     case "pattern-recognition":
+    case "executive-control":
       return [scoreSignal("logic_reasoning_score", score, confidence, "game", "Reasoning performance", detail, result)];
-    case "focus-attention":
+    case "attention":
       return [scoreSignal("attention_score", score, confidence, "game", "Attention performance", detail, result)];
-    case "processing-speed":
-      return [scoreSignal("processing_speed_score", score, confidence, "game", "Processing-speed performance", detail, result)];
-    case "verbal-reasoning":
+    case "perception":
+      return [
+        scoreSignal("symbol_accuracy_score", score, confidence, "game", "Perception performance", detail, result),
+        scoreSignal("processing_speed_score", score, confidence - 8, "game", "Visual processing performance", detail, result),
+      ];
+    case "language-concepts":
       return [
         scoreSignal("reading_comprehension_score", score, confidence, "game", "Verbal comprehension performance", detail, result),
         scoreSignal("reading_accuracy_score", score, confidence - 8, "game", "Reading accuracy performance", detail, result),
       ];
-    case "quantitative-reasoning":
-      return [scoreSignal("math_accuracy_score", score, confidence, "game", "Quantitative performance", detail, result)];
     default:
       return [scoreSignal("processing_speed_score", score, confidence - 12, "game", "General assessment performance", detail, result)];
   }

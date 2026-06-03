@@ -389,8 +389,237 @@ export const cognitiveGameChallenges: Record<string, MiniGameChallenge[]> = {
   ],
 };
 
+const registryGameChallenges: Record<string, MiniGameChallenge[]> = {
+  "distraction-filter": [
+    {
+      prompt: "Target is the word BLUE. Ignore the ink color. The word BLUE appears in green ink. What is the target?",
+      options: ["Green", "Blue", "Ink", "Neither"],
+      answerIndex: 1,
+      explanation: "The word is the target, not the ink color.",
+    },
+    {
+      prompt: "Choose the center item only: left square, center star, right star.",
+      options: ["Left square", "Center star", "Right star", "Both stars"],
+      answerIndex: 1,
+      explanation: "The instruction asks for the center item.",
+    },
+  ],
+  "flash-numbers": [
+    {
+      prompt: "Flash total: add each number as it appears.",
+      stimulus: ["7", "4", "8"],
+      options: ["17", "18", "19", "20"],
+      answerIndex: 2,
+      explanation: "7 + 4 + 8 = 19.",
+    },
+    {
+      prompt: "Flash total: add each number as it appears.",
+      stimulus: ["6", "9", "5", "3"],
+      options: ["21", "22", "23", "24"],
+      answerIndex: 2,
+      explanation: "6 + 9 + 5 + 3 = 23.",
+    },
+  ],
+  "symbol-accuracy": [
+    {
+      prompt: "Target pair is AX. Which option matches exactly?",
+      options: ["XA", "AX", "AA", "XX"],
+      answerIndex: 1,
+      explanation: "AX matches the target exactly.",
+    },
+    {
+      prompt: "Target sign is -7. Which option matches the sign and number?",
+      options: ["7", "-7", "+7", "-1"],
+      answerIndex: 1,
+      explanation: "The negative sign is part of the target.",
+    },
+  ],
+  "change-detection": [
+    {
+      prompt: "Display changed from dot in center to dot in upper-right. What changed?",
+      options: ["Color changed", "Dot moved upper-right", "Dot disappeared", "Size doubled"],
+      answerIndex: 1,
+      explanation: "The dot moved from center to upper-right.",
+    },
+    {
+      prompt: "First pattern: triangle, circle, square. Second pattern: triangle, star, square. What changed?",
+      options: ["First item", "Middle item", "Last item", "No change"],
+      answerIndex: 1,
+      explanation: "The middle item changed from circle to star.",
+    },
+  ],
+  "sequence-builder": [
+    {
+      prompt: "What comes next: 4, 8, 16, 32, ?",
+      options: ["36", "48", "64", "72"],
+      answerIndex: 2,
+      explanation: "Each number doubles.",
+    },
+    {
+      prompt: "What comes next: A, C, F, J, ?",
+      options: ["K", "M", "N", "O"],
+      answerIndex: 3,
+      explanation: "The jumps grow by one: +2, +3, +4, then +5.",
+    },
+  ],
+  "mental-folding": [
+    {
+      prompt: "Mirror the letter b horizontally. Which letter is closest?",
+      options: ["b", "d", "p", "q"],
+      answerIndex: 1,
+      explanation: "A horizontal mirror of b looks like d.",
+    },
+    {
+      prompt: "Fold a square in half vertically. Which edges meet?",
+      options: ["Top and bottom", "Left and right", "All corners only", "No edges"],
+      answerIndex: 1,
+      explanation: "A vertical fold brings left and right edges together.",
+    },
+  ],
+  "vocabulary-builder": [
+    {
+      prompt: "Hand is to glove as foot is to...",
+      options: ["Hat", "Sock", "Ring", "Coat"],
+      answerIndex: 1,
+      explanation: "A sock covers a foot like a glove covers a hand.",
+    },
+    {
+      prompt: "Choose the closest meaning of concise.",
+      options: ["Brief", "Angry", "Heavy", "Colorful"],
+      answerIndex: 0,
+      explanation: "Concise means brief and to the point.",
+    },
+  ],
+  "concept-matching": [
+    {
+      prompt: "Bird is to nest as person is to...",
+      options: ["Home", "Wing", "Tree", "Feather"],
+      answerIndex: 0,
+      explanation: "A home is a living place for a person.",
+    },
+    {
+      prompt: "Which item belongs with hammer, wrench, and screwdriver?",
+      options: ["Apple", "Pliers", "Cloud", "Triangle"],
+      answerIndex: 1,
+      explanation: "Pliers are a tool like the others.",
+    },
+  ],
+  "if-then-logic": [
+    {
+      prompt: "If A then B. A is true. What follows?",
+      options: ["B is true", "B is false", "A is false", "Nothing follows"],
+      answerIndex: 0,
+      explanation: "With A true, the rule implies B.",
+    },
+    {
+      prompt: "If it rains, the ground gets wet. The ground is dry. What can you infer?",
+      options: ["It rained", "It did not rain", "The rule is impossible", "It is snowing"],
+      answerIndex: 1,
+      explanation: "Dry ground rules out rain under the stated rule.",
+    },
+  ],
+  "deduction-challenge": [
+    {
+      prompt: "Mia is taller than Leo. Leo is taller than Sam. Who is tallest?",
+      options: ["Mia", "Leo", "Sam", "Cannot tell"],
+      answerIndex: 0,
+      explanation: "Mia is taller than Leo, and Leo is taller than Sam.",
+    },
+    {
+      prompt: "Only members can enter Lab A. Dana entered Lab A. What must be true?",
+      options: ["Dana is a member", "Dana is not a member", "Lab A is closed", "Anyone can enter"],
+      answerIndex: 0,
+      explanation: "Entry requires membership.",
+    },
+  ],
+  "cause-effect-analyzer": [
+    {
+      prompt: "Order the chain: rain, wet roads, slower traffic.",
+      options: ["Rain, wet roads, slower traffic", "Wet roads, rain, slower traffic", "Traffic, rain, wet roads", "Rain, traffic, wet roads"],
+      answerIndex: 0,
+      explanation: "Rain causes wet roads, which can slow traffic.",
+    },
+    {
+      prompt: "What is the likely effect of reducing supply while demand stays high?",
+      options: ["Lower price", "Higher price", "No change", "Less demand always"],
+      answerIndex: 1,
+      explanation: "Lower supply with high demand tends to raise price.",
+    },
+  ],
+  "system-prediction": [
+    {
+      prompt: "More practice improves skill, which makes practice feel easier. What loop is this?",
+      options: ["Balancing", "Reinforcing", "Random", "Contradictory"],
+      answerIndex: 1,
+      explanation: "Improvement encourages more practice, reinforcing the loop.",
+    },
+    {
+      prompt: "A thermostat turns heat off when the room gets warm. What loop is this?",
+      options: ["Reinforcing", "Balancing", "Runaway", "None"],
+      answerIndex: 1,
+      explanation: "The system counteracts temperature change.",
+    },
+  ],
+  "memory-retention": [
+    {
+      prompt: "Study the facts: Nova is blue. Luma is green. Kiro is red. Which color is Luma?",
+      options: ["Blue", "Green", "Red", "Yellow"],
+      answerIndex: 1,
+      explanation: "Luma was paired with green.",
+    },
+    {
+      prompt: "Study the pairings: Atlas-7, Beacon-3, Cipher-9. What number belongs to Cipher?",
+      options: ["3", "7", "9", "12"],
+      answerIndex: 2,
+      explanation: "Cipher was paired with 9.",
+    },
+  ],
+  "concept-linking": [
+    {
+      prompt: "Practice improves skill, and skill makes practice easier. Which concept fits?",
+      options: ["Contradiction", "Reinforcing loop", "Random walk", "Definition"],
+      answerIndex: 1,
+      explanation: "The two variables strengthen each other.",
+    },
+    {
+      prompt: "A learned rule is used in a new problem. What is that called?",
+      options: ["Transfer", "Forgetting", "Guessing", "Noise"],
+      answerIndex: 0,
+      explanation: "Applying knowledge in a new context is transfer.",
+    },
+  ],
+  "task-planner": [
+    {
+      prompt: "Put the process in order: gather data, decide, test, adjust.",
+      options: ["Gather, test, decide, adjust", "Gather, decide, test, adjust", "Test, gather, decide, adjust", "Decide, gather, adjust, test"],
+      answerIndex: 1,
+      explanation: "The useful sequence is gather, decide, test, adjust.",
+    },
+    {
+      prompt: "A checkout line is slow because payment takes longest. What should you optimize first?",
+      options: ["Entrance sign", "Payment step", "Receipt color", "Floor tiles"],
+      answerIndex: 1,
+      explanation: "The bottleneck is payment.",
+    },
+  ],
+  "multi-step-execution": [
+    {
+      prompt: "Choose the second option unless it is blue. The second option is green.",
+      options: ["First", "Second", "Third", "Fourth"],
+      answerIndex: 1,
+      explanation: "The second option is not blue, so choose it.",
+    },
+    {
+      prompt: "Choose the larger number, then subtract 2 mentally: 6 and 9.",
+      options: ["4", "7", "9", "11"],
+      answerIndex: 1,
+      explanation: "The larger number is 9, and 9 - 2 = 7.",
+    },
+  ],
+};
+
 export function getMiniGameChallenges(gameId: string) {
-  return cognitiveGameChallenges[gameId] ?? [
+  return cognitiveGameChallenges[gameId] ?? registryGameChallenges[gameId] ?? [
     {
       prompt: "Choose the option that best fits the rule for this challenge.",
       options: ["First option", "Best fit", "Distractor", "Unrelated"],

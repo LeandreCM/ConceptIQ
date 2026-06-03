@@ -1,17 +1,20 @@
 import { useRef, useState } from "react";
 import { RotateCcw, Timer, Zap } from "lucide-react";
 import type { GameResult, UserProfile } from "../types";
+import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 import { averageReactionTime, formatMs } from "../utils/format";
 import { buildResultId, reactionTimeToScore, scorePercentileLabel } from "../utils/scoring";
 
 interface ReactionTimeGameProps {
   profile: UserProfile;
+  domain?: CognitiveDomain;
+  game?: CognitiveGame;
   onComplete: (result: GameResult) => void;
 }
 
 type ReactionState = "idle" | "waiting" | "ready" | "early";
 
-export function ReactionTimeGame({ profile, onComplete }: ReactionTimeGameProps) {
+export function ReactionTimeGame({ profile, domain, game, onComplete }: ReactionTimeGameProps) {
   const [state, setState] = useState<ReactionState>("idle");
   const [message, setMessage] = useState("Press start, then wait for the signal.");
   const timeoutRef = useRef<number | null>(null);
@@ -88,9 +91,16 @@ export function ReactionTimeGame({ profile, onComplete }: ReactionTimeGameProps)
           ? "Train faster visual response with another reaction round."
           : "Balance speed with working memory next.",
       metrics: [
+        ...(game ? [{ label: "Game", value: game.name }] : []),
+        ...(domain ? [{ label: "Domain", value: domain.name }] : []),
         { label: "Reaction", value: earlyClick ? "Early" : `${reactionTime}ms` },
         { label: "Category score", value: `${categoryScore}/1000` },
       ],
+      cognitiveDomainId: domain?.id,
+      cognitiveDomainName: domain?.name,
+      cognitiveGameId: game?.id,
+      cognitiveGameName: game?.name,
+      skillTested: game?.primarySkill,
     });
   }
 
@@ -108,7 +118,7 @@ export function ReactionTimeGame({ profile, onComplete }: ReactionTimeGameProps)
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-white/56">Speed round</p>
-          <h2 className="text-2xl font-bold">Reaction Time</h2>
+          <h2 className="text-2xl font-bold">{game?.name ?? "Reaction Time"}</h2>
         </div>
         <div className="flex gap-2">
           <button className="btn-secondary" type="button" onClick={reset}>

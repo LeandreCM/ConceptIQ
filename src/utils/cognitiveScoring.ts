@@ -3,7 +3,7 @@ import type { CategoryScores, GameResult, GameType, LeaderboardUser, UserProfile
 import type { CognitiveDomain, CognitiveDomainId, CognitiveGame, CognitiveScoreBreakdown, DomainScore } from "../types/cognition";
 
 const GAME_TO_DOMAIN: Record<GameType, CognitiveDomainId> = {
-  reaction: "processing-speed",
+  reaction: "attention",
   memory: "working-memory",
   pattern: "pattern-recognition",
 };
@@ -54,7 +54,7 @@ export function getDomainIdForGameType(gameType: GameType): CognitiveDomainId {
 }
 
 export function getDomainIdForResult(result: GameResult): CognitiveDomainId {
-  return result.cognitiveDomainId ?? getDomainIdForGameType(result.gameType);
+  return normalizeDomainId(result.cognitiveDomainId) ?? getDomainIdForGameType(result.gameType);
 }
 
 export function getDomainForGameType(gameType: GameType): CognitiveDomain {
@@ -118,14 +118,52 @@ export function scoreForDomain(
   }
 
   switch (domainId) {
-    case "processing-speed":
+    case "attention":
+    case "perception":
+    case "executive-control":
       return categoryScores.reaction;
     case "working-memory":
+    case "language-concepts":
+    case "learning-knowledge-integration":
       return categoryScores.memory;
     case "pattern-recognition":
+    case "spatial-reasoning":
+    case "logic-reasoning":
+    case "causal-reasoning":
       return categoryScores.pattern;
     default:
       return 0;
+  }
+}
+
+function normalizeDomainId(domainId?: string): CognitiveDomainId | undefined {
+  switch (domainId) {
+    case "memory":
+      return "learning-knowledge-integration";
+    case "logic":
+      return "logic-reasoning";
+    case "focus-attention":
+    case "processing-speed":
+      return "attention";
+    case "verbal-reasoning":
+      return "language-concepts";
+    case "quantitative-reasoning":
+      return "working-memory";
+    case "systems-thinking":
+      return "causal-reasoning";
+    case "attention":
+    case "working-memory":
+    case "perception":
+    case "pattern-recognition":
+    case "spatial-reasoning":
+    case "language-concepts":
+    case "logic-reasoning":
+    case "causal-reasoning":
+    case "learning-knowledge-integration":
+    case "executive-control":
+      return domainId;
+    default:
+      return undefined;
   }
 }
 

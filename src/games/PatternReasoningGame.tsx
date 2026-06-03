@@ -4,12 +4,15 @@ import { patternQuestions } from "../data/patternQuestions";
 import type { GameResult } from "../types";
 import { buildResultId, patternRoundToScore, scorePercentileLabel } from "../utils/scoring";
 import { ProgressBar } from "../components/ProgressBar";
+import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 
 interface PatternReasoningGameProps {
+  domain?: CognitiveDomain;
+  game?: CognitiveGame;
   onComplete: (result: GameResult) => void;
 }
 
-export function PatternReasoningGame({ onComplete }: PatternReasoningGameProps) {
+export function PatternReasoningGame({ domain, game, onComplete }: PatternReasoningGameProps) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
@@ -64,10 +67,17 @@ export function PatternReasoningGame({ onComplete }: PatternReasoningGameProps) 
       whatImproved: correct >= 8 ? "High pattern accuracy registered." : "Your reasoning baseline got a fresh calibration.",
       trainNext: correct >= 8 ? "Try reaction time to raise your speed profile." : "Look for cycles, jumps, and alternating rules.",
       metrics: [
+        ...(game ? [{ label: "Game", value: game.name }] : []),
+        ...(domain ? [{ label: "Domain", value: domain.name }] : []),
         { label: "Correct", value: `${correct}/${patternQuestions.length}` },
         { label: "Time", value: `${Math.round(elapsedMs / 1000)}s` },
         { label: "Category score", value: `${categoryScore}/1000` },
       ],
+      cognitiveDomainId: domain?.id,
+      cognitiveDomainName: domain?.name,
+      cognitiveGameId: game?.id,
+      cognitiveGameName: game?.name,
+      skillTested: game?.primarySkill,
     });
   }
 
@@ -76,7 +86,7 @@ export function PatternReasoningGame({ onComplete }: PatternReasoningGameProps) 
       <div className="surface p-5">
         <div className="flex min-h-80 flex-col items-center justify-center rounded-lg border border-white/10 bg-white/6 p-8 text-center">
           <Puzzle className="mb-5 h-14 w-14 text-pulse" />
-          <h2 className="text-3xl font-black">Pattern Reasoning</h2>
+          <h2 className="text-3xl font-black">{game?.name ?? "Pattern Reasoning"}</h2>
           <p className="mt-3 max-w-xl text-white/64">
             Solve 10 symbolic patterns. Accuracy matters most, and speed adds a bonus.
           </p>
@@ -94,7 +104,7 @@ export function PatternReasoningGame({ onComplete }: PatternReasoningGameProps) 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-white/56">Question {questionIndex + 1} of {patternQuestions.length}</p>
-          <h2 className="text-2xl font-bold">Find the missing item</h2>
+          <h2 className="text-2xl font-bold">{game?.primarySkill ?? "Find the missing item"}</h2>
         </div>
         <span className="pill">{answers.length} answered</span>
       </div>

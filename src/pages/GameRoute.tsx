@@ -1,4 +1,4 @@
-import { ArrowLeft, Info } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { CognitiveDomainIcon } from "../components/CognitiveDomainIcon";
 import { MiniCognitiveGame } from "../games/MiniCognitiveGame";
 import { PatternReasoningGame } from "../games/PatternReasoningGame";
@@ -8,17 +8,15 @@ import type { GameResult, UserProfile } from "../types";
 import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 import { getFirstPlayableGame, getGameById } from "../utils/cognitiveScoring";
 import { cognitiveDomains } from "../data/cognitiveDomains";
-import { gameDetailsRoute } from "../utils/gameRoutes";
 
 interface GameRouteScreenProps {
   gameId: string;
   profile: UserProfile;
   onComplete: (result: GameResult) => void;
   onBackToTrain: () => void;
-  onNavigateRoute: (route: string) => void;
 }
 
-export function GameRouteScreen({ gameId, profile, onComplete, onBackToTrain, onNavigateRoute }: GameRouteScreenProps) {
+export function GameRouteScreen({ gameId, profile, onComplete, onBackToTrain }: GameRouteScreenProps) {
   const target = resolveGameRouteTarget(gameId);
 
   if (!target) {
@@ -54,14 +52,10 @@ export function GameRouteScreen({ gameId, profile, onComplete, onBackToTrain, on
             </div>
           </div>
         </div>
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <div className="mt-5">
           <button className="btn-secondary" type="button" onClick={onBackToTrain}>
             <ArrowLeft className="h-4 w-4" />
             Train
-          </button>
-          <button className="btn-secondary" type="button" onClick={() => onNavigateRoute(gameDetailsRoute(game.id))}>
-            <Info className="h-4 w-4" />
-            Details
           </button>
         </div>
       </section>
@@ -83,15 +77,15 @@ export function GameRunner({
   onComplete: (result: GameResult) => void;
 }) {
   if (game.playableGameType === "reaction") {
-    return <ReactionTimeGame profile={profile} onComplete={onComplete} />;
+    return <ReactionTimeGame profile={profile} domain={domain} game={game} onComplete={onComplete} />;
   }
 
   if (game.playableGameType === "memory") {
-    return <WorkingMemoryGame profile={profile} onComplete={onComplete} />;
+    return <WorkingMemoryGame profile={profile} domain={domain} game={game} onComplete={onComplete} />;
   }
 
   if (game.playableGameType === "pattern") {
-    return <PatternReasoningGame onComplete={onComplete} />;
+    return <PatternReasoningGame domain={domain} game={game} onComplete={onComplete} />;
   }
 
   return <MiniCognitiveGame domain={domain} game={game} onComplete={onComplete} />;

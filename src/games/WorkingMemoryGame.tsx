@@ -1,16 +1,19 @@
 import { useMemo, useRef, useState } from "react";
 import { Brain, Check, EyeOff, Play } from "lucide-react";
 import type { GameResult, UserProfile } from "../types";
+import type { CognitiveDomain, CognitiveGame } from "../types/cognition";
 import { buildResultId, memoryRoundToScore, scorePercentileLabel } from "../utils/scoring";
 
 interface WorkingMemoryGameProps {
   profile: UserProfile;
+  domain?: CognitiveDomain;
+  game?: CognitiveGame;
   onComplete: (result: GameResult) => void;
 }
 
 const SYMBOLS = ["2", "7", "4", "9", "A", "K", "M", "R", "Q", "S", "X", "Z"];
 
-export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProps) {
+export function WorkingMemoryGame({ profile, domain, game, onComplete }: WorkingMemoryGameProps) {
   const startingLength = useMemo(() => Math.min(10, 4 + Math.floor(profile.bestMemoryScore / 220)), [profile.bestMemoryScore]);
   const [length, setLength] = useState(startingLength);
   const [sequence, setSequence] = useState<string[]>([]);
@@ -68,10 +71,17 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
       whatImproved: perfectRound ? "Reverse sequence span increased for your next memory round." : "Reverse recall accuracy was logged for calibration.",
       trainNext: perfectRound ? "Try pattern reasoning while your working memory is warm." : "Repeat memory with a shorter sequence and rebuild accuracy.",
       metrics: [
+        ...(game ? [{ label: "Game", value: game.name }] : []),
+        ...(domain ? [{ label: "Domain", value: domain.name }] : []),
         { label: "Sequence length", value: String(length) },
         { label: "Accuracy", value: `${Math.round(accuracy * 100)}%` },
         { label: "Category score", value: `${categoryScore}/1000` },
       ],
+      cognitiveDomainId: domain?.id,
+      cognitiveDomainName: domain?.name,
+      cognitiveGameId: game?.id,
+      cognitiveGameName: game?.name,
+      skillTested: game?.primarySkill,
     });
   }
 
@@ -80,7 +90,7 @@ export function WorkingMemoryGame({ profile, onComplete }: WorkingMemoryGameProp
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-white/56">Memory round</p>
-          <h2 className="text-2xl font-bold">Reverse Sequence</h2>
+          <h2 className="text-2xl font-bold">{game?.name ?? "Reverse Sequence"}</h2>
         </div>
         <button className="btn-primary" type="button" onClick={startRound}>
           <Play className="h-4 w-4" />

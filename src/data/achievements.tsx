@@ -47,7 +47,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "human-calculator",
     name: "Human Calculator",
-    description: "Reach 500 in Quantitative Reasoning. Perfect reverse recall counts during the MVP.",
+    description: "Complete a near-perfect Flash Numbers or reverse recall round.",
     category: "domain",
     target: 500,
     icon: <Calculator className="h-5 w-5" />,
@@ -103,7 +103,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "memory-keeper",
     name: "Memory Keeper",
-    description: "Reach 500 in the Memory domain.",
+    description: "Reach 500 in Learning & Knowledge Integration.",
     category: "domain",
     target: 500,
     icon: <BookOpen className="h-5 w-5" />,
@@ -111,7 +111,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "process-master",
     name: "Process Master",
-    description: "Complete a future process-memory challenge at high accuracy.",
+    description: "Complete Multi-Step Execution at high accuracy.",
     category: "domain",
     target: 1,
     icon: <ListChecks className="h-5 w-5" />,
@@ -135,7 +135,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "logic-lord",
     name: "Logic Lord",
-    description: "Reach 500 in the Logic domain.",
+    description: "Reach 500 in Logic & Reasoning.",
     category: "domain",
     target: 500,
     icon: <Scale className="h-5 w-5" />,
@@ -143,7 +143,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "focus-monk",
     name: "Focus Monk",
-    description: "Reach 500 in the Focus / Attention domain.",
+    description: "Reach 500 in Attention.",
     category: "domain",
     target: 500,
     icon: <Crosshair className="h-5 w-5" />,
@@ -151,7 +151,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "verbal-analyst",
     name: "Verbal Analyst",
-    description: "Reach 500 in the Verbal Reasoning domain.",
+    description: "Reach 500 in Language & Concepts.",
     category: "domain",
     target: 500,
     icon: <MessageSquareText className="h-5 w-5" />,
@@ -159,7 +159,7 @@ export const achievements: AchievementDefinition[] = [
   {
     id: "system-architect",
     name: "System Architect",
-    description: "Reach 500 in the Systems Thinking domain.",
+    description: "Reach 500 in Causal Reasoning.",
     category: "domain",
     target: 500,
     icon: <Network className="h-5 w-5" />,

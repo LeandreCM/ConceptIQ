@@ -376,20 +376,15 @@ export default function App() {
 
   const pageContent = {
     home: <Dashboard profile={profile} onNavigate={navigate} onNavigateRoute={navigateRoute} />,
-    play: route.gameRoute?.mode === "play" ? (
+    play: route.gameRoute ? (
       <GameRouteScreen
         gameId={route.gameRoute.gameId}
         profile={profile}
         onComplete={handleGameComplete}
         onBackToTrain={() => navigateRoute("/#play")}
-        onNavigateRoute={navigateRoute}
       />
     ) : (
-      <PlayPage
-        profile={profile}
-        gameRoute={route.gameRoute?.mode === "details" ? route.gameRoute : undefined}
-        onNavigateRoute={navigateRoute}
-      />
+      <PlayPage profile={profile} onNavigateRoute={navigateRoute} />
     ),
     results: <Results result={lastResult} onNavigate={navigate} />,
     profile: <Profile profile={profile} onProfileChange={updateProfile} onReset={handleReset} onNavigate={navigate} />,

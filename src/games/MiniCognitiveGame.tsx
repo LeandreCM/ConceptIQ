@@ -237,11 +237,11 @@ export function MiniCognitiveGame({ domain, game, onComplete }: MiniCognitiveGam
 }
 
 function persistenceGameTypeForDomain(domainId: CognitiveDomain["id"]): GameType {
-  if (domainId === "processing-speed" || domainId === "focus-attention") {
+  if (domainId === "attention" || domainId === "perception" || domainId === "executive-control") {
     return "reaction";
   }
 
-  if (domainId === "memory" || domainId === "working-memory" || domainId === "verbal-reasoning" || domainId === "quantitative-reasoning") {
+  if (domainId === "working-memory" || domainId === "language-concepts" || domainId === "learning-knowledge-integration") {
     return "memory";
   }
 

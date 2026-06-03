@@ -1,16 +1,18 @@
 import type { GameType } from ".";
 
 export type CognitiveDomainId =
-  | "memory"
+  | "attention"
   | "working-memory"
-  | "spatial-reasoning"
-  | "logic"
-  | "focus-attention"
-  | "processing-speed"
+  | "perception"
   | "pattern-recognition"
-  | "verbal-reasoning"
-  | "quantitative-reasoning"
-  | "systems-thinking";
+  | "spatial-reasoning"
+  | "language-concepts"
+  | "logic-reasoning"
+  | "causal-reasoning"
+  | "learning-knowledge-integration"
+  | "executive-control";
+
+export type GameDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 export interface CognitiveSubdomain {
   id: string;
@@ -22,6 +24,14 @@ export interface CognitiveGame {
   id: string;
   name: string;
   description: string;
+  fullDescription: string;
+  instructions: string[];
+  difficulty: GameDifficulty;
+  estimatedTime: string;
+  cognitiveVariables: string[];
+  playRoute: string;
+  exampleTask: string;
+  recommendedSkillLevel: string;
   subdomainIds: string[];
   primarySkill: string;
   metrics: string[];
