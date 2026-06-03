@@ -8,6 +8,7 @@ import {
   getGameForGameType,
   scoreForDomain,
 } from "./cognitiveScoring";
+import { updateUserCognitiveProfile } from "./cognitiveProfile";
 
 const GAME_WEIGHTS: CategoryScores = {
   reaction: 0.34,
@@ -201,7 +202,10 @@ export function applyGameResultToProfile(
     attempts: finalAttempts,
   };
 
-  return { profile: finalProfileWithResult, result: finalResult };
+  // New games can add richer error tags to GameResult; this shared call turns each result into evidence for the user's evolving cognitive profile.
+  const cognitiveProfileWithResult = updateUserCognitiveProfile(finalProfileWithResult, { gameResult: finalResult });
+
+  return { profile: cognitiveProfileWithResult, result: finalResult };
 }
 
 export function getRecommendedGameType(profile: UserProfile): GameType {

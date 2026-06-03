@@ -1,4 +1,5 @@
 import type { CognitiveAttempt, GameResult, UserProfile } from "../types";
+import { createDefaultCognitiveProfile, normalizeCognitiveProfile } from "./cognitiveProfile";
 
 const PROFILE_KEY = "conceptiq-profile";
 const LAST_RESULT_KEY = "conceptiq-last-result";
@@ -31,6 +32,7 @@ export const defaultProfile: UserProfile = {
     pattern: 0,
   },
   maxGamesInSession: 0,
+  cognitiveProfile: createDefaultCognitiveProfile(),
 };
 
 export function loadProfile(): UserProfile {
@@ -56,6 +58,7 @@ export function loadProfile(): UserProfile {
       sessions: parsed.sessions ?? [],
       history,
       attempts,
+      cognitiveProfile: normalizeCognitiveProfile(parsed.cognitiveProfile),
     };
   } catch {
     return defaultProfile;

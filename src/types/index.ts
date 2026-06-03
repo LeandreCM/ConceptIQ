@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { CognitiveDomainId } from "./cognition";
+import type { CognitiveProfile } from "./cognitiveProfile";
 
 export type PageKey =
   | "home"
@@ -8,6 +9,7 @@ export type PageKey =
   | "profile"
   | "leaderboard"
   | "achievements"
+  | "survey"
   | "settings"
   | "debug";
 
@@ -95,6 +97,7 @@ export interface UserProfile {
   attempts: CognitiveAttempt[];
   failCounts: CategoryScores;
   maxGamesInSession: number;
+  cognitiveProfile: CognitiveProfile;
 }
 
 export interface Rank {

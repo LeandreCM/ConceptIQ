@@ -1,4 +1,4 @@
-import { Brain, CalendarCheck, ChevronRight, LineChart, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
+import { Brain, CalendarCheck, ChevronRight, ClipboardList, LineChart, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { ProgressBar } from "../components/ProgressBar";
 import { RankBadge } from "../components/RankBadge";
 import { StatCard } from "../components/StatCard";
@@ -22,6 +22,7 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
   const displayName = profile.displayName || profile.username;
   const monthlySessions = sessionsInLast30Days(profile.sessions);
   const weeklyProgress = Math.min(7, monthlySessions);
+  const hasSurvey = profile.cognitiveProfile.surveyResponses.length > 0;
 
   function continueTraining() {
     if (recommendedGame?.playableGameType) {
@@ -61,6 +62,27 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
           </div>
         </div>
       </section>
+
+      {!hasSurvey ? (
+        <section className="surface p-5">
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-solar/15 p-3 text-solar">
+              <ClipboardList className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold uppercase text-white/50">Cognitive profile intake</p>
+              <h2 className="mt-1 text-2xl font-black">Personalize your training path</h2>
+              <p className="mt-2 text-sm leading-6 text-white/64">
+                Add survey evidence so ConceptIQ can estimate learning patterns alongside your game results.
+              </p>
+            </div>
+          </div>
+          <button className="btn-secondary mt-5 w-full" type="button" onClick={() => onNavigate("survey")}>
+            <ClipboardList className="h-4 w-4" />
+            Complete Intake Survey
+          </button>
+        </section>
+      ) : null}
 
       <section className="surface p-5">
         <div className="flex items-start gap-4">

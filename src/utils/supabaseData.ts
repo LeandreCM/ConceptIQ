@@ -4,6 +4,7 @@ import type { CognitiveAttempt, GameResult, GameType, LeaderboardUser, UserProfi
 import type { CognitiveDomainId } from "../types/cognition";
 import type { Database, Json } from "../types/supabase";
 import { averageReactionTime } from "./format";
+import { normalizeCognitiveProfile } from "./cognitiveProfile";
 import { defaultProfile } from "./storage";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -204,6 +205,7 @@ function profileRowToUserProfile(row: ProfileRow, attemptRows: AttemptRow[], ach
       pattern: row.pattern_score,
     },
     domainScores: parseDomainScores(row.domain_scores),
+    cognitiveProfile: normalizeCognitiveProfile(parseCognitiveProfile(row.cognitive_profile)),
     history,
     attempts,
     failCounts,
@@ -224,6 +226,7 @@ function profileToProfileUpsert(userId: string, profile: UserProfile) {
     memory_score: profile.categoryScores.memory,
     pattern_score: profile.categoryScores.pattern,
     domain_scores: profile.domainScores,
+    cognitive_profile: profile.cognitiveProfile as unknown as Json,
     games_played: profile.gamesPlayed,
     best_reaction_time: profile.bestReactionTime,
     average_reaction_time: averageReactionTime(profile.history),
@@ -239,11 +242,11 @@ async function upsertProfile(userId: string, profile: UserProfile) {
   const row = profileToProfileUpsert(userId, profile);
   const result = await supabase!.from("profiles").upsert(row);
 
-  if (!isMissingDomainScoresColumn(result.error)) {
+  if (!isMissingOptionalProfileColumn(result.error)) {
     return result;
   }
 
-  const { domain_scores: _domainScores, ...fallbackRow } = row;
+  const { domain_scores: _domainScores, cognitive_profile: _cognitiveProfile, ...fallbackRow } = row;
   return supabase!.from("profiles").upsert(fallbackRow);
 }
 
@@ -318,14 +321,22 @@ function parseDomainScores(value: Json | undefined) {
   return defaultProfile.domainScores;
 }
 
-function isMissingDomainScoresColumn(error: unknown) {
+function parseCognitiveProfile(value: Json | undefined) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+
+  return defaultProfile.cognitiveProfile;
+}
+
+function isMissingOptionalProfileColumn(error: unknown) {
   if (!error || typeof error !== "object") {
     return false;
   }
 
   const message = "message" in error && typeof error.message === "string" ? error.message : "";
   const details = "details" in error && typeof error.details === "string" ? error.details : "";
-  return /domain_scores/i.test(`${message} ${details}`) && /column|schema cache|could not find/i.test(`${message} ${details}`);
+  return /(domain_scores|cognitive_profile)/i.test(`${message} ${details}`) && /column|schema cache|could not find/i.test(`${message} ${details}`);
 }
 
 function assertSupabase() {

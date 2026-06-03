@@ -16,6 +16,7 @@ export interface Database {
           memory_score: number;
           pattern_score: number;
           domain_scores: Json | null;
+          cognitive_profile: Json | null;
           games_played: number;
           best_reaction_time: number | null;
           average_reaction_time: number | null;
@@ -38,6 +39,7 @@ export interface Database {
           memory_score?: number;
           pattern_score?: number;
           domain_scores?: Json | null;
+          cognitive_profile?: Json | null;
           games_played?: number;
           best_reaction_time?: number | null;
           average_reaction_time?: number | null;
@@ -113,6 +115,102 @@ export interface Database {
           unlocked_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["user_achievements"]["Insert"]>;
+        Relationships: [];
+      };
+      user_profiles: {
+        Row: {
+          user_id: string;
+          cognitive_profile: Json;
+          preferred_learning_modes: string[];
+          learning_struggle_flags: string[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          cognitive_profile?: Json;
+          preferred_learning_modes?: string[];
+          learning_struggle_flags?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      survey_responses: {
+        Row: {
+          id: string;
+          user_id: string;
+          response: Json;
+          completed_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          response: Json;
+          completed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["survey_responses"]["Insert"]>;
+        Relationships: [];
+      };
+      cognitive_variables: {
+        Row: {
+          user_id: string;
+          variable_key: string;
+          value: Json;
+          confidence: number;
+          evidence_sources: Json;
+          last_updated: string;
+        };
+        Insert: {
+          user_id: string;
+          variable_key: string;
+          value: Json;
+          confidence?: number;
+          evidence_sources?: Json;
+          last_updated?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cognitive_variables"]["Insert"]>;
+        Relationships: [];
+      };
+      assessment_results: {
+        Row: {
+          id: string;
+          user_id: string;
+          result: Json;
+          completed_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          result: Json;
+          completed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["assessment_results"]["Insert"]>;
+        Relationships: [];
+      };
+      cognitive_hypotheses: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          confidence: number;
+          supporting_evidence: Json;
+          recommended_next_assessment: string;
+          recommended_training_activity: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          name: string;
+          confidence?: number;
+          supporting_evidence?: Json;
+          recommended_next_assessment?: string;
+          recommended_training_activity?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["cognitive_hypotheses"]["Insert"]>;
         Relationships: [];
       };
     };

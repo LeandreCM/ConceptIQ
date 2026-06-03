@@ -3,14 +3,20 @@ import type { ReactNode } from "react";
 import { cognitiveDomains } from "../data/cognitiveDomains";
 import type { UserProfile } from "../types";
 import { calculateCognitiveScoreBreakdown } from "../utils/cognitiveScoring";
+import { applyMockAssessmentUpdate } from "../utils/cognitiveProfile";
 import { categoryLabel, formatDuration, relativeDate } from "../utils/format";
 
 interface DebugProps {
   profile: UserProfile;
+  onProfileChange: (profile: UserProfile) => Promise<void> | void;
 }
 
-export function Debug({ profile }: DebugProps) {
+export function Debug({ profile, onProfileChange }: DebugProps) {
   const breakdown = calculateCognitiveScoreBreakdown(profile);
+
+  function runMockAssessmentUpdate() {
+    void onProfileChange(applyMockAssessmentUpdate(profile));
+  }
 
   return (
     <div className="space-y-5">
@@ -31,6 +37,21 @@ export function Debug({ profile }: DebugProps) {
         <DebugStat label="Domains" value={String(cognitiveDomains.length)} />
         <DebugStat label="Attempts" value={String(profile.attempts.length)} />
         <DebugStat label="ConceptIQ" value={String(breakdown.overallConceptIQScore)} />
+      </section>
+
+      <section className="surface p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold uppercase text-white/50">Mock assessment updater</p>
+            <h2 className="mt-1 text-2xl font-black">Inject symbol-processing evidence</h2>
+            <p className="mt-2 text-sm leading-6 text-white/58">
+              Future games can send the same assessment result shape into updateUserCognitiveProfile().
+            </p>
+          </div>
+          <button className="btn-secondary" type="button" onClick={runMockAssessmentUpdate}>
+            Run Mock Update
+          </button>
+        </div>
       </section>
 
       <DebugPanel title="Loaded domains" icon={<ListTree className="h-5 w-5" />}>

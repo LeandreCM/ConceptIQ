@@ -15,6 +15,7 @@ create table if not exists public.profiles (
   memory_score integer not null default 0 check (memory_score between 0 and 1000),
   pattern_score integer not null default 0 check (pattern_score between 0 and 1000),
   domain_scores jsonb not null default '{}'::jsonb,
+  cognitive_profile jsonb not null default '{}'::jsonb,
   games_played integer not null default 0 check (games_played >= 0),
   best_reaction_time integer,
   average_reaction_time integer,
@@ -56,6 +57,51 @@ create table if not exists public.user_achievements (
   primary key (user_id, achievement_id)
 );
 
+create table if not exists public.user_profiles (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  cognitive_profile jsonb not null default '{}'::jsonb,
+  preferred_learning_modes text[] not null default '{}',
+  learning_struggle_flags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.survey_responses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  response jsonb not null,
+  completed_at timestamptz not null default now()
+);
+
+create table if not exists public.cognitive_variables (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  variable_key text not null,
+  value jsonb not null,
+  confidence integer not null default 0 check (confidence between 0 and 100),
+  evidence_sources jsonb not null default '[]'::jsonb,
+  last_updated timestamptz not null default now(),
+  primary key (user_id, variable_key)
+);
+
+create table if not exists public.assessment_results (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  result jsonb not null,
+  completed_at timestamptz not null default now()
+);
+
+create table if not exists public.cognitive_hypotheses (
+  id text not null,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  name text not null,
+  confidence integer not null default 0 check (confidence between 0 and 100),
+  supporting_evidence jsonb not null default '[]'::jsonb,
+  recommended_next_assessment text not null default '',
+  recommended_training_activity text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (id, user_id)
+);
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -90,6 +136,7 @@ create index if not exists attempts_user_created_at_idx on public.attempts (user
 create index if not exists attempts_user_game_type_idx on public.attempts (user_id, game_type);
 
 alter table public.profiles add column if not exists domain_scores jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists cognitive_profile jsonb not null default '{}'::jsonb;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -111,6 +158,11 @@ alter table public.profiles enable row level security;
 alter table public.attempts enable row level security;
 alter table public.achievements enable row level security;
 alter table public.user_achievements enable row level security;
+alter table public.user_profiles enable row level security;
+alter table public.survey_responses enable row level security;
+alter table public.cognitive_variables enable row level security;
+alter table public.assessment_results enable row level security;
+alter table public.cognitive_hypotheses enable row level security;
 
 drop policy if exists "profiles are public leaderboard rows" on public.profiles;
 create policy "profiles are public leaderboard rows"
@@ -162,6 +214,74 @@ drop policy if exists "users delete own achievement unlocks" on public.user_achi
 create policy "users delete own achievement unlocks"
 on public.user_achievements for delete
 using (auth.uid() = user_id);
+
+drop policy if exists "users read own cognitive profile" on public.user_profiles;
+create policy "users read own cognitive profile"
+on public.user_profiles for select
+using (auth.uid() = user_id);
+
+drop policy if exists "users upsert own cognitive profile" on public.user_profiles;
+create policy "users upsert own cognitive profile"
+on public.user_profiles for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "users update own cognitive profile" on public.user_profiles;
+create policy "users update own cognitive profile"
+on public.user_profiles for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "users read own survey responses" on public.survey_responses;
+create policy "users read own survey responses"
+on public.survey_responses for select
+using (auth.uid() = user_id);
+
+drop policy if exists "users insert own survey responses" on public.survey_responses;
+create policy "users insert own survey responses"
+on public.survey_responses for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "users read own cognitive variables" on public.cognitive_variables;
+create policy "users read own cognitive variables"
+on public.cognitive_variables for select
+using (auth.uid() = user_id);
+
+drop policy if exists "users upsert own cognitive variables" on public.cognitive_variables;
+create policy "users upsert own cognitive variables"
+on public.cognitive_variables for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "users update own cognitive variables" on public.cognitive_variables;
+create policy "users update own cognitive variables"
+on public.cognitive_variables for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "users read own assessment results" on public.assessment_results;
+create policy "users read own assessment results"
+on public.assessment_results for select
+using (auth.uid() = user_id);
+
+drop policy if exists "users insert own assessment results" on public.assessment_results;
+create policy "users insert own assessment results"
+on public.assessment_results for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "users read own cognitive hypotheses" on public.cognitive_hypotheses;
+create policy "users read own cognitive hypotheses"
+on public.cognitive_hypotheses for select
+using (auth.uid() = user_id);
+
+drop policy if exists "users upsert own cognitive hypotheses" on public.cognitive_hypotheses;
+create policy "users upsert own cognitive hypotheses"
+on public.cognitive_hypotheses for insert
+with check (auth.uid() = user_id);
+
+drop policy if exists "users update own cognitive hypotheses" on public.cognitive_hypotheses;
+create policy "users update own cognitive hypotheses"
+on public.cognitive_hypotheses for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
 insert into public.achievements (id, name, description, category, target)
 values

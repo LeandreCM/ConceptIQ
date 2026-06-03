@@ -11,8 +11,11 @@ import { Play as PlayPage } from "./pages/Play";
 import { Profile } from "./pages/Profile";
 import { Results } from "./pages/Results";
 import { Settings } from "./pages/Settings";
+import { Survey } from "./pages/Survey";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import type { GameResult, PageKey, UserProfile } from "./types";
+import type { SurveyResponse } from "./types/cognitiveProfile";
+import { updateUserCognitiveProfile } from "./utils/cognitiveProfile";
 import { applyGameResultToProfile } from "./utils/scoring";
 import {
   fetchRemoteProfile,
@@ -41,7 +44,7 @@ const primaryNavigation: Array<{ key: PageKey; label: string; icon: ReactNode }>
   { key: "achievements", label: "Achievements", icon: <Award className="h-4 w-4" /> },
 ];
 
-const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "settings", "debug"];
+const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "survey", "settings", "debug"];
 
 function pageFromLocation(): PageKey {
   if (window.location.pathname.replace(/\/$/, "").endsWith("/debug")) {
@@ -210,6 +213,12 @@ export default function App() {
     }
   }
 
+  async function handleSurveyComplete(response: SurveyResponse) {
+    const updatedProfile = updateUserCognitiveProfile(profile, { surveyResponse: response });
+    await updateProfile(updatedProfile);
+    navigate("profile");
+  }
+
   async function handleGameComplete(result: GameResult) {
     const sessionGameCount = getSessionGameCount() + 1;
     saveSessionGameCount(sessionGameCount);
@@ -349,10 +358,17 @@ export default function App() {
     home: <Dashboard profile={profile} onNavigate={navigate} />,
     play: <PlayPage profile={profile} onComplete={handleGameComplete} />,
     results: <Results result={lastResult} onNavigate={navigate} />,
-    profile: <Profile profile={profile} onProfileChange={updateProfile} onReset={handleReset} />,
+    profile: <Profile profile={profile} onProfileChange={updateProfile} onReset={handleReset} onNavigate={navigate} />,
     leaderboard: <Leaderboard profile={profile} useRemote={Boolean(authUser)} currentUserId={authUser?.id ?? null} />,
     achievements: <Achievements profile={profile} />,
-    debug: <Debug profile={profile} />,
+    survey: (
+      <Survey
+        initialResponse={profile.cognitiveProfile.surveyResponses[0]}
+        onComplete={handleSurveyComplete}
+        onNavigate={navigate}
+      />
+    ),
+    debug: <Debug profile={profile} onProfileChange={updateProfile} />,
     settings: (
       <Settings
         profile={profile}
