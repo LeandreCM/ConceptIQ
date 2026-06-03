@@ -6,15 +6,17 @@ import type { PageKey, UserProfile } from "../types";
 import { sessionsInLast30Days } from "../utils/achievements";
 import { categoryLabel, formatScore, formatSigned, relativeDate } from "../utils/format";
 import { calculateCognitiveScoreBreakdown, getDomainById, getGameById } from "../utils/cognitiveScoring";
+import { gamePlayRoute } from "../utils/gameRoutes";
 
 const PREFERRED_COGNITIVE_GAME_KEY = "conceptiq-preferred-cognitive-game";
 
 interface DashboardProps {
   profile: UserProfile;
   onNavigate: (page: PageKey) => void;
+  onNavigateRoute: (route: string) => void;
 }
 
-export function Dashboard({ profile, onNavigate }: DashboardProps) {
+export function Dashboard({ profile, onNavigate, onNavigateRoute }: DashboardProps) {
   const latestResult = profile.history[0];
   const breakdown = calculateCognitiveScoreBreakdown(profile);
   const recommendedDomain = getDomainById(breakdown.recommendedDomainId);
@@ -31,6 +33,11 @@ export function Dashboard({ profile, onNavigate }: DashboardProps) {
 
     if (recommendedGame) {
       sessionStorage.setItem(PREFERRED_COGNITIVE_GAME_KEY, recommendedGame.id);
+    }
+
+    if (recommendedGame) {
+      onNavigateRoute(gamePlayRoute(recommendedGame.id));
+      return;
     }
 
     onNavigate("play");

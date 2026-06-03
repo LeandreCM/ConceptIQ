@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, PlayCircle, Route } from "lucide-react";
 import { CognitiveDomainIcon } from "../components/CognitiveDomainIcon";
+import { GameCard } from "../components/GameCard";
 import { ProgressBar } from "../components/ProgressBar";
 import { cognitiveDomains } from "../data/cognitiveDomains";
-import { MiniCognitiveGame } from "../games/MiniCognitiveGame";
-import { PatternReasoningGame } from "../games/PatternReasoningGame";
-import { ReactionTimeGame } from "../games/ReactionTimeGame";
-import { WorkingMemoryGame } from "../games/WorkingMemoryGame";
-import type { GameResult, GameType, UserProfile } from "../types";
+import type { GameType, UserProfile } from "../types";
 import type { CognitiveDomain, CognitiveDomainId, CognitiveGame } from "../types/cognition";
+import { resolveGameRouteTarget } from "./GameRoute";
 import {
   calculateCognitiveScoreBreakdown,
   getDomainById,
@@ -17,6 +15,8 @@ import {
   getGameById,
   getGameForGameType,
 } from "../utils/cognitiveScoring";
+import type { GameRoute } from "../utils/gameRoutes";
+import { gameDetailsRoute, gamePlayRoute } from "../utils/gameRoutes";
 
 const PREFERRED_GAME_KEY = "conceptiq-preferred-game";
 const PREFERRED_COGNITIVE_GAME_KEY = "conceptiq-preferred-cognitive-game";
@@ -24,29 +24,50 @@ const gameTypes: GameType[] = ["reaction", "memory", "pattern"];
 
 interface PlayProps {
   profile: UserProfile;
-  onComplete: (result: GameResult) => void;
+  gameRoute?: GameRoute;
+  onNavigateRoute: (route: string) => void;
 }
 
-export function Play({ profile, onComplete }: PlayProps) {
+export function Play({ profile, gameRoute, onNavigateRoute }: PlayProps) {
   const breakdown = useMemo(() => calculateCognitiveScoreBreakdown(profile), [profile]);
   const preferredGame = sessionStorage.getItem(PREFERRED_GAME_KEY) as GameType | null;
   const preferredCognitiveGameId = sessionStorage.getItem(PREFERRED_COGNITIVE_GAME_KEY);
+  const routeTarget = gameRoute ? resolveGameRouteTarget(gameRoute.gameId) : null;
   const preferredCognitiveGame =
+    routeTarget?.game ??
     (preferredCognitiveGameId ? getGameById(preferredCognitiveGameId) : null) ??
     (preferredGame && gameTypes.includes(preferredGame) ? getGameForGameType(preferredGame) : null);
   const preferredCognitiveDomain = preferredCognitiveGame
     ? cognitiveDomains.find((domain) => domain.games.some((game) => game.id === preferredCognitiveGame.id))
     : null;
-  const preferredDomain = preferredCognitiveDomain?.id ?? (preferredGame && gameTypes.includes(preferredGame) ? getDomainForGameType(preferredGame).id : breakdown.recommendedDomainId);
+  const preferredDomain = routeTarget?.domain.id ?? preferredCognitiveDomain?.id ?? (preferredGame && gameTypes.includes(preferredGame) ? getDomainForGameType(preferredGame).id : breakdown.recommendedDomainId);
   const [selectedDomainId, setSelectedDomainId] = useState<CognitiveDomainId>(preferredDomain);
-  const [activeGameId, setActiveGameId] = useState<string | null>(preferredCognitiveGame?.id ?? null);
+  const [focusedGameId, setFocusedGameId] = useState<string | null>(gameRoute?.mode === "details" ? routeTarget?.game.id ?? null : null);
   const selectedDomain = getDomainById(selectedDomainId);
   const selectedScore = breakdown.domainScores.find((score) => score.domainId === selectedDomainId);
-  const activeGame = activeGameId ? getGameById(activeGameId) : null;
+  const gameCards = useMemo(
+    () => cognitiveDomains.flatMap((domain) => domain.games.map((game) => ({ domain, game }))),
+    [],
+  );
+
+  useEffect(() => {
+    if (!gameRoute || gameRoute.mode !== "details") {
+      return;
+    }
+
+    const target = resolveGameRouteTarget(gameRoute.gameId);
+
+    if (!target) {
+      return;
+    }
+
+    setSelectedDomainId(target.domain.id);
+    setFocusedGameId(target.game.id);
+  }, [gameRoute]);
 
   function selectDomain(domainId: CognitiveDomainId) {
     setSelectedDomainId(domainId);
-    setActiveGameId(null);
+    setFocusedGameId(null);
   }
 
   function startTraining(domain: CognitiveDomain) {
@@ -56,23 +77,99 @@ export function Play({ profile, onComplete }: PlayProps) {
       return;
     }
 
-    if (playable.playableGameType) {
-      sessionStorage.setItem(PREFERRED_GAME_KEY, playable.playableGameType);
-    }
-
-    sessionStorage.setItem(PREFERRED_COGNITIVE_GAME_KEY, playable.id);
-    setSelectedDomainId(domain.id);
-    setActiveGameId(playable.id);
+    playGame(domain, playable);
   }
 
-  function startGame(domain: CognitiveDomain, game: CognitiveGame) {
+  function rememberGamePreference(game: CognitiveGame) {
     if (game.playableGameType) {
       sessionStorage.setItem(PREFERRED_GAME_KEY, game.playableGameType);
     }
 
     sessionStorage.setItem(PREFERRED_COGNITIVE_GAME_KEY, game.id);
+  }
+
+  function playGame(domain: CognitiveDomain, game: CognitiveGame) {
+    rememberGamePreference(game);
     setSelectedDomainId(domain.id);
-    setActiveGameId(game.id);
+    onNavigateRoute(gamePlayRoute(game.id));
+  }
+
+  function showGameDetails(domain: CognitiveDomain, game: CognitiveGame) {
+    rememberGamePreference(game);
+    setSelectedDomainId(domain.id);
+    setFocusedGameId(game.id);
+    onNavigateRoute(gameDetailsRoute(game.id));
+  }
+
+  if (gameRoute?.mode === "details" && routeTarget) {
+    const { domain, game } = routeTarget;
+    const domainScore = breakdown.domainScores.find((score) => score.domainId === domain.id);
+    const playable = game.implemented && !game.locked;
+
+    return (
+      <div className="space-y-5">
+        <section className="surface-gradient p-5">
+          <div className="flex items-start gap-4">
+            <div className={`rounded-lg p-3 ${domain.colorClass}`}>
+              <CognitiveDomainIcon iconName={domain.iconName} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold uppercase text-white/50">Game details</p>
+              <h1 className="mt-1 text-3xl font-black">{game.name}</h1>
+              <p className="mt-2 text-sm leading-6 text-white/64">{game.description}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <button className="btn-primary min-h-12" type="button" onClick={() => playGame(domain, game)} disabled={!playable}>
+              <PlayCircle className="h-4 w-4" />
+              Play {game.name}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button className="btn-secondary min-h-12" type="button" onClick={() => onNavigateRoute("/#play")}>
+              All Games
+            </button>
+          </div>
+        </section>
+
+        <section className="surface p-5">
+          <div className="grid grid-cols-2 gap-3">
+            <MiniStat label="Domain score" value={String(domainScore?.score ?? 0)} />
+            <MiniStat label="Attempts" value={String(domainScore?.attempts ?? 0)} />
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <DetailBlock title="Skill tested" items={[game.primarySkill, ...game.metrics]} />
+            <DetailBlock
+              title="Learning objectives"
+              items={[
+                `Train ${domain.name}`,
+                `Measure ${game.primarySkill}`,
+                "Build cleaner score evidence",
+              ]}
+            />
+            <DetailBlock
+              title="Difficulty"
+              items={[
+                game.playableGameType ? "Full core game" : "MVP assessment loop",
+                "Adaptive scoring placeholder",
+              ]}
+            />
+            <DetailBlock title="Subdomains" items={game.subdomainIds.map((id) => domain.subdomains.find((subdomain) => subdomain.id === id)?.name ?? id)} />
+          </div>
+        </section>
+
+        <DomainDetail
+          domain={domain}
+          score={domainScore?.score ?? 0}
+          attempts={domainScore?.attempts ?? 0}
+          focusedGameId={game.id}
+          onStart={() => playGame(domain, game)}
+          onPlayGame={(nextGame) => playGame(domain, nextGame)}
+          onDetailsGame={(nextGame) => showGameDetails(domain, nextGame)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -89,6 +186,34 @@ export function Play({ profile, onComplete }: PlayProps) {
               Pick a domain, review what it measures, then start a playable game or preview future training.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="surface p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold uppercase text-white/50">Game library</p>
+            <h2 className="mt-1 text-2xl font-black">Pick a game and press Play</h2>
+          </div>
+          <span className="pill">{gameCards.length} games</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {gameCards.map(({ domain, game }) => (
+            <GameCard
+              key={game.id}
+              title={game.name}
+              description={game.description}
+              icon={<CognitiveDomainIcon iconName={domain.iconName} />}
+              playRoute={gamePlayRoute(game.id)}
+              detailsRoute={gameDetailsRoute(game.id)}
+              onPlay={() => playGame(domain, game)}
+              onDetails={() => showGameDetails(domain, game)}
+              stat={`${domain.name} | ${game.primarySkill}`}
+              badge={game.implemented && !game.locked ? "Playable" : "Coming Soon"}
+              active={focusedGameId === game.id}
+              locked={!game.implemented || game.locked}
+            />
+          ))}
         </div>
       </section>
 
@@ -136,24 +261,11 @@ export function Play({ profile, onComplete }: PlayProps) {
         domain={selectedDomain}
         score={selectedScore?.score ?? 0}
         attempts={selectedScore?.attempts ?? 0}
+        focusedGameId={focusedGameId}
         onStart={() => startTraining(selectedDomain)}
-        onStartGame={(game) => startGame(selectedDomain, game)}
+        onPlayGame={(game) => playGame(selectedDomain, game)}
+        onDetailsGame={(game) => showGameDetails(selectedDomain, game)}
       />
-
-      {activeGame ? (
-        <section className="space-y-3">
-          <div className="surface-soft p-4">
-            <p className="text-sm font-bold uppercase text-white/50">Now training</p>
-            <p className="mt-1 text-xl font-black">{activeGame.name}</p>
-          </div>
-          {activeGame.playableGameType === "reaction" ? <ReactionTimeGame profile={profile} onComplete={onComplete} /> : null}
-          {activeGame.playableGameType === "memory" ? <WorkingMemoryGame profile={profile} onComplete={onComplete} /> : null}
-          {activeGame.playableGameType === "pattern" ? <PatternReasoningGame onComplete={onComplete} /> : null}
-          {!activeGame.playableGameType ? (
-            <MiniCognitiveGame domain={selectedDomain} game={activeGame} onComplete={onComplete} />
-          ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }
@@ -162,14 +274,18 @@ function DomainDetail({
   domain,
   score,
   attempts,
+  focusedGameId,
   onStart,
-  onStartGame,
+  onPlayGame,
+  onDetailsGame,
 }: {
   domain: CognitiveDomain;
   score: number;
   attempts: number;
+  focusedGameId: string | null;
   onStart: () => void;
-  onStartGame: (game: CognitiveGame) => void;
+  onPlayGame: (game: CognitiveGame) => void;
+  onDetailsGame: (game: CognitiveGame) => void;
 }) {
   const playable = getFirstPlayableGame(domain.id);
 
@@ -199,27 +315,20 @@ function DomainDetail({
         <h3 className="text-xl font-black">Games available</h3>
         <div className="mt-3 grid gap-3">
           {domain.games.map((game) => (
-            <div key={game.id} className="rounded-lg border border-white/10 bg-white/7 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-black">{game.name}</p>
-                  <p className="mt-1 text-sm leading-6 text-white/58">{game.description}</p>
-                </div>
-                <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-black text-mint">
-                  Playable
-                </span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {game.metrics.map((metric) => (
-                  <span key={metric} className="rounded-full bg-ink/38 px-2.5 py-1 text-xs font-bold text-white/56">
-                    {metric}
-                  </span>
-                ))}
-              </div>
-              <button className="btn-secondary mt-4 w-full" type="button" onClick={() => onStartGame(game)}>
-                Start {game.name}
-              </button>
-            </div>
+            <GameCard
+              key={game.id}
+              title={game.name}
+              description={game.description}
+              icon={<CognitiveDomainIcon iconName={domain.iconName} />}
+              playRoute={gamePlayRoute(game.id)}
+              detailsRoute={gameDetailsRoute(game.id)}
+              onPlay={() => onPlayGame(game)}
+              onDetails={() => onDetailsGame(game)}
+              stat={game.metrics.join(" | ")}
+              badge={game.implemented && !game.locked ? "Playable" : "Coming Soon"}
+              active={focusedGameId === game.id}
+              locked={!game.implemented || game.locked}
+            />
           ))}
         </div>
       </div>

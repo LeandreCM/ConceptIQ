@@ -6,6 +6,7 @@ import { BottomNavigation } from "./components/BottomNavigation";
 import { Achievements } from "./pages/Achievements";
 import { Dashboard } from "./pages/Dashboard";
 import { Debug } from "./pages/Debug";
+import { GameRouteScreen } from "./pages/GameRoute";
 import { Leaderboard } from "./pages/Leaderboard";
 import { Play as PlayPage } from "./pages/Play";
 import { Profile } from "./pages/Profile";
@@ -35,6 +36,8 @@ import {
 } from "./utils/storage";
 import { appErrorMessage } from "./utils/errors";
 import { completeEmailConfirmationLogin } from "./utils/authCallback";
+import type { GameRoute } from "./utils/gameRoutes";
+import { parseGameRoute } from "./utils/gameRoutes";
 
 const primaryNavigation: Array<{ key: PageKey; label: string; icon: ReactNode }> = [
   { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
@@ -46,13 +49,24 @@ const primaryNavigation: Array<{ key: PageKey; label: string; icon: ReactNode }>
 
 const allPages: PageKey[] = ["home", "play", "results", "profile", "leaderboard", "achievements", "survey", "settings", "debug"];
 
-function pageFromLocation(): PageKey {
+interface AppRoute {
+  page: PageKey;
+  gameRoute?: GameRoute;
+}
+
+function routeFromLocation(): AppRoute {
+  const gameRoute = parseGameRoute(window.location.pathname, window.location.hash);
+
+  if (gameRoute) {
+    return { page: "play", gameRoute };
+  }
+
   if (window.location.pathname.replace(/\/$/, "").endsWith("/debug")) {
-    return "debug";
+    return { page: "debug" };
   }
 
   const raw = window.location.hash.replace("#", "");
-  return allPages.includes(raw as PageKey) ? (raw as PageKey) : "home";
+  return { page: allPages.includes(raw as PageKey) ? (raw as PageKey) : "home" };
 }
 
 function authRedirectUrl() {
@@ -63,7 +77,7 @@ function authRedirectUrl() {
 export default function App() {
   const [profile, setProfile] = useState<UserProfile>(() => loadProfile());
   const [lastResult, setLastResult] = useState<GameResult | null>(() => loadLastResult());
-  const [page, setPage] = useState<PageKey>(() => pageFromLocation());
+  const [route, setRoute] = useState<AppRoute>(() => routeFromLocation());
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false);
@@ -71,7 +85,7 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleLocationChange = () => setPage(pageFromLocation());
+    const handleLocationChange = () => setRoute(routeFromLocation());
     window.addEventListener("hashchange", handleLocationChange);
     window.addEventListener("popstate", handleLocationChange);
     return () => {
@@ -160,16 +174,22 @@ export default function App() {
     () => `${profile.achievementsUnlocked.length} unlock${profile.achievementsUnlocked.length === 1 ? "" : "s"}`,
     [profile.achievementsUnlocked.length],
   );
+  const page = route.page;
 
   function navigate(nextPage: PageKey) {
-    setPage(nextPage);
     if (nextPage === "debug") {
       window.history.pushState({}, "", "/debug");
+      setRoute(routeFromLocation());
       return;
     }
 
-    const path = window.location.pathname.replace(/\/debug\/?$/, "/");
-    window.history.pushState({}, "", `${path || "/"}#${nextPage}`);
+    window.history.pushState({}, "", `/#${nextPage}`);
+    setRoute(routeFromLocation());
+  }
+
+  function navigateRoute(nextRoute: string) {
+    window.history.pushState({}, "", nextRoute);
+    setRoute(routeFromLocation());
   }
 
   async function loadRemoteUserProfile(user: SupabaseUser) {
@@ -355,8 +375,22 @@ export default function App() {
   }
 
   const pageContent = {
-    home: <Dashboard profile={profile} onNavigate={navigate} />,
-    play: <PlayPage profile={profile} onComplete={handleGameComplete} />,
+    home: <Dashboard profile={profile} onNavigate={navigate} onNavigateRoute={navigateRoute} />,
+    play: route.gameRoute?.mode === "play" ? (
+      <GameRouteScreen
+        gameId={route.gameRoute.gameId}
+        profile={profile}
+        onComplete={handleGameComplete}
+        onBackToTrain={() => navigateRoute("/#play")}
+        onNavigateRoute={navigateRoute}
+      />
+    ) : (
+      <PlayPage
+        profile={profile}
+        gameRoute={route.gameRoute?.mode === "details" ? route.gameRoute : undefined}
+        onNavigateRoute={navigateRoute}
+      />
+    ),
     results: <Results result={lastResult} onNavigate={navigate} />,
     profile: <Profile profile={profile} onProfileChange={updateProfile} onReset={handleReset} onNavigate={navigate} />,
     leaderboard: <Leaderboard profile={profile} useRemote={Boolean(authUser)} currentUserId={authUser?.id ?? null} />,
